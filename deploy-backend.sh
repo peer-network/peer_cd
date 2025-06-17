@@ -30,6 +30,21 @@ cp -r /var/www/peer_beta/peer_backend_git/sql_files_for_import/ /var/www/peer_be
 cp -r /var/www/peer_beta/peer_backend_git/runtime-data /var/www/peer_beta/peer_backend/
 
 cp /var/www/peer_beta/peer_backend_git/.env.schema /var/www/peer_beta/peer_backend/
+
+ENV_FILE="/var/www/peer_beta/peer_backend/.env"
+if [[ -f /tmp/active_db.txt ]]; then
+  NEW_DB=$(cat /tmp/active_db.txt)
+
+  if [[ -f "$ENV_FILE" ]]; then
+    echo "Updating .env with DB_DATABASE=$NEW_DB"
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$NEW_DB/" "$ENV_FILE"
+  else
+    echo ".env file not found — skipping DB_DATABASE update"
+  fi
+else
+  echo "No new DB name found — /tmp/active_db.txt is missing"
+fi
+
 cp /var/www/peer_beta/peer_backend_git/composer.json /var/www/peer_beta/peer_backend/
 cp /var/www/peer_beta/peer_backend_git/cd-generate-backend-config.sh /var/www/peer_beta/peer_backend/ 
 cp -r /var/www/peer_beta/peer_backend_git/.git  /var/www/peer_beta/peer_backend/
