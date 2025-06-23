@@ -8,7 +8,7 @@ if ! command -v ffmpeg >/dev/null 2>&1; then
     echo "ffmpeg not found. Exiting...(if this is a new server install manually)"
     exit 1
 else
-    echo "ffmpeg is already installed."
+    echo "ffmpeg is already installed, Version $(ffmpeg -version | head -n 1)"
 fi
 
 cd /var/www/peer_beta/peer_backend_git || {
