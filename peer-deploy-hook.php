@@ -37,8 +37,10 @@ if (
     $payload['pull_request']['merged'] === true &&
     $payload['pull_request']['base']['ref'] === 'development'
 ) {
-    file_put_contents('/var/log/webhook.log', "[" . date('Y-m-d H:i:s') . "] PR merged into development – Deploy triggered\n", FILE_APPEND);
-    shell_exec('/home/ubuntu/deploy-scripts/deploy-backend.sh >> /var/log/deploy.log 2>&1 &');
+    file_put_contents('/var/log/webhook.log', "[" . date('Y-m-d H:i:s') . "] PR merged into development – Deploy & DB update triggered\n", FILE_APPEND);
+    $prNumber = $payload['pull_request']['number'];
+    $command = 'PR_NUMBER=' . escapeshellarg($prNumber) . ' /home/ubuntu/deploy-scripts/deploy-backend.sh >> /var/log/deploy.log 2>&1 &';
+    shell_exec($command);
     http_response_code(200);
     echo 'Deployment triggered from PR merge to development';
     exit;
@@ -48,4 +50,3 @@ if (
     echo 'No deployment triggered';
     exit;
 }
-
