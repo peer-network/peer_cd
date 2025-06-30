@@ -26,7 +26,7 @@ for file in $CHANGED_FILES; do
 done
 
 if [[ "$SQL_CHANGED" == false ]]; then
-  echo "*** No SQL files changed — skipping DB update and deploying backend only. ***"
+  echo "*** No SQL files changed — skipping DB update and deploying backend only. ***
   /home/ubuntu/deploy-scripts/deploy-backend.sh >> /var/log/deploy.log 2>&1
   exit 0
 fi
