@@ -1,0 +1,200 @@
+{
+        "info": {
+                "_postman_id": "da68a6de-ee09-44a1-b64b-ca6a664bf9cc",
+                "name": "Prod Server Feed Testing",
+                "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+                "_exporter_id": "43606001",
+                "_collection_link": "https://automated-testing-with-taso.postman.co/workspace/Peer-Workspace~a910b484-5e62-449c-9ff4-504470bc690f/collection/43606001-da68a6de-ee09-44a1-b64b-ca6a664bf9cc?action=share&source=collection_link&creator=43606001"
+        },
+        "item": [
+                {
+                        "name": "Login",
+                        "event": [
+                                {
+                                        "listen": "test",
+                                        "script": {
+                                                "exec": [
+                                                        "pm.test(\"ResponseCode is correct\", function () {",
+                                                        "    pm.expect(pm.response.text()).to.include(\"10801\");",
+                                                        "});",
+                                                        "pm.test(\"Status is correct\", function () {",
+                                                        "    pm.expect(pm.response.text()).to.include('\"status\":\"success\"');",
+                                                        "});",
+                                                        "",
+                                                        "let response = pm.response.json();",
+                                                        "if (!pm.response.text().includes(\"error\")) {",
+                                                        "    pm.environment.set(\"accessToken\", response.data.login.accessToken);",
+                                                        "} else {",
+                                                        "    console.log(\"Error detected in response, environment variable not set.\");",
+                                                        "}",
+                                                        "if (!pm.response.text().includes(\"error\")) {",
+                                                        "    pm.environment.set(\"refreshToken\", response.data.login.refreshToken);",
+                                                        "} else {",
+                                                        "    console.log(\"Error detected in response, environment variable not set.\");",
+                                                        "}"
+                                                ],
+                                                "type": "text/javascript",
+                                                "packages": {}
+                                        }
+                                }
+                        ],
+                        "request": {
+                                "auth": {
+                                        "type": "noauth"
+                                },
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                        "mode": "graphql",
+                                        "graphql": {
+                                                "query": "mutation {\n  login(email: \"{{email}}\", password: \"{{password}}\") {\n    status\n    ResponseCode\n    accessToken\n    refreshToken\n  }\n}",
+                                                "variables": ""
+                                        }
+                                },
+                                "url": {
+                                        "raw": "https://peer-network.eu/graphql",
+                                        "protocol": "https",
+                                        "host": [
+                                                "peernetwork",
+                                                "eu"
+                                        ],
+                                        "path": [
+                                                "graphql"
+                                        ]
+                                }
+                        },
+                        "response": []
+                },
+                {
+                        "name": "List posts 1-20",
+                        "event": [
+                                {
+                                        "listen": "test",
+                                        "script": {
+                                                "exec": [
+                                                        "pm.test(\"ResponseCode is correct\", function () {",
+                                                        "    pm.expect(pm.response.text()).to.include(\"11501\");",
+                                                        "});",
+                                                        "pm.test(\"Status is correct\", function () {",
+                                                        "    pm.expect(pm.response.text()).to.include('\"status\":\"success\"');",
+                                                        "});",
+                                                        ""
+                                                ],
+                                                "type": "text/javascript",
+                                                "packages": {}
+                                        }
+                                }
+                        ],
+                        "request": {
+                                "auth": {
+                                        "type": "bearer",
+                                        "bearer": [
+                                                {
+                                                        "key": "token",
+                                                        "value": "{{accessToken}}",
+                                                        "type": "string"
+                                                }
+                                        ]
+                                },
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                        "mode": "graphql",
+                                        "graphql": {
+                                                "query": "query ListPosts {\n    listPosts(offset: 0, limit: 20) {\n        status\n        counter\n        ResponseCode\n        affectedRows {\n            id\n            contenttype\n            title\n            media\n            cover\n            mediadescription\n            createdat\n            amountlikes\n            amountviews\n            amountcomments\n            amountdislikes\n            amounttrending\n            isliked\n            isviewed\n            isreported\n            isdisliked\n            issaved\n            tags\n            user {\n                id\n                username\n                slug\n                img\n                isfollowed\n                isfollowing\n            }\n            comments {\n                commentid\n                userid\n                postid\n                parentid\n                content\n                createdat\n                amountlikes\n                amountreplies\n                isliked\n                user {\n                    id\n                    username\n                    slug\n                    img\n                    isfollowed\n                    isfollowing\n                }\n            }\n        }\n    }\n}",
+                                                "variables": ""
+                                        }
+                                },
+                                "url": {
+                                        "raw": "https://peer-network.eu/graphql",
+                                        "protocol": "https",
+                                        "host": [
+                                                "peernetwork",
+                                                "eu"
+                                        ],
+                                        "path": [
+                                                "graphql"
+                                        ]
+                                }
+                        },
+                        "response": []
+                },
+                {
+                        "name": "List posts 21-40 Copy",
+                        "event": [
+                                {
+                                        "listen": "test",
+                                        "script": {
+                                                "exec": [
+                                                        "pm.test(\"ResponseCode is correct\", function () {",
+                                                        "    pm.expect(pm.response.text()).to.include(\"11501\");",
+                                                        "});",
+                                                        "pm.test(\"Status is correct\", function () {",
+                                                        "    pm.expect(pm.response.text()).to.include('\"status\":\"success\"');",
+                                                        "});",
+                                                        ""
+                                                ],
+                                                "type": "text/javascript",
+                                                "packages": {}
+                                        }
+                                }
+                        ],
+                        "request": {
+                                "auth": {
+                                        "type": "bearer",
+                                        "bearer": [
+                                                {
+                                                        "key": "token",
+                                                        "value": "{{accessToken}}",
+                                                        "type": "string"
+                                                }
+                                        ]
+                                },
+                                "method": "POST",
+                                "header": [],
+                                "body": {
+                                        "mode": "graphql",
+                                        "graphql": {
+                                                "query": "query ListPosts {\n    listPosts(offset: 20, limit: 20) {\n        status\n        counter\n        ResponseCode\n        affectedRows {\n            id\n            contenttype\n            title\n            media\n            cover\n            mediadescription\n            createdat\n            amountlikes\n            amountviews\n            amountcomments\n            amountdislikes\n            amounttrending\n            isliked\n            isviewed\n            isreported\n            isdisliked\n            issaved\n            tags\n            user {\n                id\n                username\n                slug\n                img\n                isfollowed\n                isfollowing\n            }\n            comments {\n                commentid\n                userid\n                postid\n                parentid\n                content\n                createdat\n                amountlikes\n                amountreplies\n                isliked\n                user {\n                    id\n                    username\n                    slug\n                    img\n                    isfollowed\n                    isfollowing\n                }\n            }\n        }\n    }\n}",
+                                                "variables": ""
+                                        }
+                                },
+                                "url": {
+                                        "raw": "https://peer-network.eu/graphql",
+                                        "protocol": "https",
+                                        "host": [
+                                                "peernetwork",
+                                                "eu"
+                                        ],
+                                        "path": [
+                                                "graphql"
+                                        ]
+                                }
+                        },
+                        "response": []
+                }
+        ],
+        "event": [
+                {
+                        "listen": "prerequest",
+                        "script": {
+                                "type": "text/javascript",
+                                "packages": {},
+                                "exec": [
+                                        "let accessToken = pm.environment.get(\"accessToken\")"
+                                ]
+                        }
+                },
+                {
+                        "listen": "test",
+                        "script": {
+                                "type": "text/javascript",
+                                "packages": {},
+                                "exec": [
+                                        "pm.test(\"Query is successful\", function () {",
+                                        "    pm.response.to.have.status(200);",
+                                        "});"
+                                ]
+                        }
+                }
+        ]
