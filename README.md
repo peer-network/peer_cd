@@ -2,7 +2,7 @@
 This is the repository of Peer Networks Continuos Deployment (CD) Code.  
 
 
-# Continuos Deplaoyment
+# Continuos Deployment
 
 ## This repo is to track files adn changes in Peers' Continuos Deployment.
 
