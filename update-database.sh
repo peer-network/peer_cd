@@ -1,5 +1,8 @@
 #!/bin/bash
 
+### to migrated teh main peer-network database
+
+
 source /home/ubuntu/.env.deploy
 
 if [[ -z "$GITHUB_TOKEN" ]]; then
