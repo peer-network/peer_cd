@@ -1,0 +1,48 @@
+name: Deploy by Directory and Branch
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - 'monitor-stack/**'
+      - 'php-webhook/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Detect changed directories
+        id: changes
+        run: |
+          echo "CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | cut -d/ -f1 | sort -u)" >> $GITHUB_OUTPUT
+
+      - name: Deploy changes
+        run: |
+          BRANCH=$(echo "${{ github.ref }}" | awk -F/ '{print $NF}')
+          echo "Branch: $BRANCH"
+          for dir in ${{ steps.changes.outputs.CHANGED }}; do
+            case "$BRANCH:$dir" in
+              main:monitor-stack)
+                ssh -i ~/.ssh/id_monitor_prod ubuntu@prod-monitor-host "./deploy-monitor.sh"
+                ;;
+              main:php-webhook)
+                ssh -i ~/.ssh/id_webhook_prod ubuntu@prod-webhook-host "./deploy-webhook.sh"
+                ;;
+              dev:monitor-stack)
+                ssh -i ~/.ssh/id_test ubuntu@test-host "./deploy-monitor-test.sh"
+                ;;
+              dev:php-webhook)
+                ssh -i ~/.ssh/id_test ubuntu@test-host "./deploy-webhook-test.sh"
+                ;;
+              *)
+                echo "No deploy config for $BRANCH:$dir"
+                ;;
+            esac
+          done
+
