@@ -1,4 +1,8 @@
 #!/bin/bash
+### This is the backend update script that calls calls ffmpeg, copies the new git code to that main backend dirs.
+### Then cleans out the old code and runs the docker compose to rebuild the backend.
+### Lastly it will call the backend configureation builder to relink all fo the needed tools
+
 
 echo "=== Deployment started at $(date) ==="
 

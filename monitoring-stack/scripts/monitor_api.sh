@@ -83,7 +83,7 @@ if [[ "$FAIL_COUNT" -gt 0 ]]; then
   TRIMMED_ERROR=$(echo "$ERROR_MESSAGE" | head -c 500)
 
   # ✅ Formatted message
-  MESSAGE="⚠🔥Something is down🔥⚠️
+  MESSAGE="⚠🔥Something is down🔥⚠
 
   queryName: $QUERY_NAME
   timestamp: $TIMESTAMP
