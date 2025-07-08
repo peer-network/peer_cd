@@ -1,48 +1,41 @@
-name: Deploy by Directory and Branch
+name: Deploy Monitor Stack
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
     paths:
       - 'monitor-stack/**'
-      - 'php-webhook/**'
 
 jobs:
-  deploy:
+  deploy-monitor:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Detect changed directories
-        id: changes
+      - name: Set up SSH keys
         run: |
-          echo "CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | cut -d/ -f1 | sort -u)" >> $GITHUB_OUTPUT
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY_JUMPHOST }}" > ~/.ssh/beta_testing
+          echo "${{ secrets.SSH_KEY_MONITOR }}" > ~/.ssh/rsa_id
+          chmod 600 ~/.ssh/beta_testing ~/.ssh/rsa_id
 
-      - name: Deploy changes
+          eval "$(ssh-agent -s)"
+          echo "$SSH_PASSPHRASE" | SSH_ASKPASS=/bin/echo DISPLAY=1 ssh-add ~/.ssh/beta_testing
+          echo "$SSH_PASSPHRASE" | SSH_ASKPASS=/bin/echo DISPLAY=1 ssh-add ~/.ssh/rsa_id
+
+          ssh-keyscan -H 164.30.10.149 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 172.16.0.20 >> ~/.ssh/known_hosts
+        env:
+          SSH_PASSPHRASE: ${{ secrets.SSH_PASSPHRASE }}
+
+      - name: Rsync monitor-stack to remote
         run: |
-          BRANCH=$(echo "${{ github.ref }}" | awk -F/ '{print $NF}')
-          echo "Branch: $BRANCH"
-          for dir in ${{ steps.changes.outputs.CHANGED }}; do
-            case "$BRANCH:$dir" in
-              main:monitor-stack)
-                ssh -i ~/.ssh/id_monitor_prod ubuntu@prod-monitor-host "./deploy-monitor.sh"
-                ;;
-              main:php-webhook)
-                ssh -i ~/.ssh/id_webhook_prod ubuntu@prod-webhook-host "./deploy-webhook.sh"
-                ;;
-              dev:monitor-stack)
-                ssh -i ~/.ssh/id_test ubuntu@test-host "./deploy-monitor-test.sh"
-                ;;
-              dev:php-webhook)
-                ssh -i ~/.ssh/id_test ubuntu@test-host "./deploy-webhook-test.sh"
-                ;;
-              *)
-                echo "No deploy config for $BRANCH:$dir"
-                ;;
-            esac
-          done
+          echo "Deploying monitor-stack to /home/ubuntu/peer_cd/monitoring-stack/"
 
+          rsync -az --delete \
+            --exclude='.git' \
+            -e "ssh -J ubuntu@164.30.10.149" \
+            monitor-stack/ \
+            ubuntu@172.16.0.20:/home/ubuntu/peer_cd/monitoring-stack/
