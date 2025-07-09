@@ -52,7 +52,7 @@ def verify_signature(payload, sig_header):
         return False
 
 ### To set the needed paths fot the webhook
-@app.route('/github-webhook', methods=['POST'])
+@app.route('/deploy-hook', methods=['POST'])
 def github_webhook():
     payload = request.data
     sig_header = request.headers.get('X-Hub-Signature-256', '')
@@ -70,7 +70,7 @@ def github_webhook():
 
     branch_ref = data.get('ref', '')
     if branch_ref != TARGET_BRANCH:
-        log_event(f"*** Ignored branch: {branch_ref} ***")
+        log_event(f"*** Ignored push to branch: {branch_ref} ***")
         return 'Branch not tracked, ignoring.', 200
 
     json_path = save_raw_payload(data)
@@ -80,7 +80,7 @@ def github_webhook():
     # Trigger your sync logic (you’ll refine this next)
     subprocess.Popen(["/home/ubuntu/sync_to_group.sh", json_path])
 
-    return 'Webhook received and processed', 200
+    return 'Webhook event push received and processed', 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
