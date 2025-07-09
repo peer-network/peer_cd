@@ -51,6 +51,7 @@ def verify_signature(payload, sig_header):
     except Exception:
         return False
 
+### To set the needed paths fot the webhook
 @app.route('/github-webhook', methods=['POST'])
 def github_webhook():
     payload = request.data
@@ -70,7 +71,7 @@ def github_webhook():
 
     json_path = save_raw_payload(data)
     log_event(f"=== Payload saved: {json_path} ===")
-    
+
 
     # Trigger your sync logic (you’ll refine this next)
     subprocess.Popen(["/home/ubuntu/sync_to_group.sh", json_path])
