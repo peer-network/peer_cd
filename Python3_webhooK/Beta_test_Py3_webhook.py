@@ -19,7 +19,7 @@ WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
 
 # Your target GitHub repo
 TARGET_REPO = "peer-network/peer_cd"
-
+TARGET_BRANCH = "refs/heads/dev"
 
 ## save the log adding a timestamp to test the what is being added
 def log_event(msg):
@@ -68,6 +68,10 @@ def github_webhook():
     if repo_full_name != TARGET_REPO:
         abort(400, f'*** Ignored repo: {repo_full_name} ***')
 
+    branch_ref = data.get('ref', '')
+    if branch_ref != TARGET_BRANCH:
+        log_event(f"*** Ignored branch: {branch_ref} ***")
+        return 'Branch not tracked, ignoring.', 200
 
     json_path = save_raw_payload(data)
     log_event(f"=== Payload saved: {json_path} ===")
