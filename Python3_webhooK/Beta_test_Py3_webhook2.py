@@ -17,8 +17,8 @@ from flask import Flask, request, jsonify
 from pathlib import Path
 
 # Read the GitHub webhook secret from environment variable
-WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
-GITHUB_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
+WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").strip()
+# GITHUB_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
 
 # Your target GitHub repo
 TARGET_REPO = "peer-network/peer_cd"
