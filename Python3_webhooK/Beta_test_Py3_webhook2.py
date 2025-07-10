@@ -18,10 +18,12 @@ from pathlib import Path
 
 # Read the GitHub webhook secret from environment variable
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
+GITHUB_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
 
 # Your target GitHub repo
 TARGET_REPO = "peer-network/peer_cd"
 TARGET_BRANCH = "refs/heads/dev"
+SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa"
 
 
 # Configuration
