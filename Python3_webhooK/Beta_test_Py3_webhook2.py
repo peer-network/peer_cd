@@ -2,6 +2,7 @@
 """
 GitHub Webhook Server for Jump Host Deployment
 Handles GitHub push events and deploys to target servers via rsync/ssh
+This will allo peer to puch to various servers on the admin adn backend lines.
 """
 
 import os
