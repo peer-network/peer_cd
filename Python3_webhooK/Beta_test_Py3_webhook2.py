@@ -22,6 +22,8 @@ WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").strip()
 
 # Your target GitHub repo
 TARGET_REPO = "peer-network/peer_cd"
+
+# Push to dev will triger web-hook.
 TARGET_BRANCH = "refs/heads/dev"
 SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa"
 
