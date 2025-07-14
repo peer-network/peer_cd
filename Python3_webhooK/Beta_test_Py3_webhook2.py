@@ -188,7 +188,6 @@ def process_deployment(webhook_data):
 def handle_webhook():
     """Handle GitHub webhook requests"""
 
-
     payload_body = request.data  # <-- Critical: raw bytes for HMAC
 
     signature_header = request.headers.get('X-Hub-Signature-256')
