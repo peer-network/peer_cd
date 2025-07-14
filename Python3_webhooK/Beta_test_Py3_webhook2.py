@@ -17,10 +17,7 @@ from flask import Flask, request, jsonify
 from pathlib import Path
 
 # Read the GitHub webhook secret from environment variable
-WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").strip()
-# GITHUB_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode()
-print ("This is the webhook: ", WEBHOOK_SECRET)
-WEBHOOK_SECRET = b'F5A0A668776C9D3CC29055454117E9E7CD02D0C73238EDCB2674574F549D5FC8'
+WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode("utf-8")
 
 
 # Your target GitHub repo
@@ -74,7 +71,7 @@ def verify_signature(payload_body, signature_header):
         return False
     
     expected_signature = hmac.new(
-        WEBHOOK_SECRET.encode('utf-8'),
+        WEBHOOK_SECRET,
         payload_body,
         hashlib.sha256
     ).hexdigest()
