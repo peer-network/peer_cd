@@ -188,21 +188,19 @@ def process_deployment(webhook_data):
 def handle_webhook():
     """Handle GitHub webhook requests"""
 
-    expected_signature = hmac.new(
-        WEBHOOK_SECRET,
-        payload_body,
-        hashlib.sha256
-    ).hexdigest()
-    
-    hash_object = hmac.new(WEBHOOK_SECRET, msg=payload_body, digestmod=hashlib.sha256)
-    expected_signature = "sha256=" + hash_object.hexdigest()
 
-    signature = request.headers.get('X-Hub-Signature-256')
+    payload_body = request.data  # <-- Critical: raw bytes for HMAC
+
+    signature_header = request.headers.get('X-Hub-Signature-256')
     event_type = request.headers.get('X-GitHub-Event')
-
 
     if not signature_header:
         raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
+
+    # Compute expected signature
+    hash_object = hmac.new(WEBHOOK_SECRET, msg=payload_body, digestmod=hashlib.sha256)
+    expected_signature = "sha256=" + hash_object.hexdigest()
+
 
     if not hmac.compare_digest(expected_signature, signature_header):
         raise HTTPException(status_code=403, detail="Request signatures didn't match!")
