@@ -202,7 +202,7 @@ def handle_webhook():
     
     # Verify signature
     if not verify_signature(request.data, signature):
-        logger.warning("Invalid webhook signature")
+        logger.warning("Invalid webhook signature", signature)
         return jsonify({'error': 'Invalid signature'}), 401
     
     # Parse webhook data
