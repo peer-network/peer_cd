@@ -24,7 +24,7 @@ TARGET_REPO = "peer-network/peer_cd"
 
 # Push to dev will triger web-hook.
 TARGET_BRANCH = "refs/heads/dev"
-SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa"
+SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa_deploy"  # Use passphrase-less key for automation
 
 # Configuration
 LOG_DIR = '/var/log/webhook/'
@@ -41,7 +41,7 @@ TARGET_SERVERS = {
     }
 }
 
-# Setup logging, not update for logging
+# Setup logging
 def setup_logging():
     """Setup logging configuration"""
     os.makedirs(LOG_DIR, exist_ok=True)
@@ -131,19 +131,38 @@ def deploy_to_server(server_config, source_dir, repo_info):
     server_user = server_config['user']
     deploy_path = server_config['deploy_path']
     
-    # Rsync command
-    rsync_cmd = [
-        'rsync',
-        '-avz',
-        '--delete',
-        '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no',
-        f'{source_dir}/',
-        f'{server_user}@{server_ip}:{deploy_path}'
-    ]
+    # Get SSH key passphrase from environment
+    ssh_passphrase = os.environ.get('SSH_PASSPHRASE', '')
+    
+    # Use ssh-agent or sshpass for passphrase handling
+    if ssh_passphrase:
+        # Option 1: Use sshpass (requires sshpass to be installed)
+        rsync_cmd = [
+            'sshpass', '-p', ssh_passphrase,
+            'rsync',
+            '-avz',
+            '--delete',
+            '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no -o PasswordAuthentication=no',
+            f'{source_dir}/',
+            f'{server_user}@{server_ip}:{deploy_path}'
+        ]
+    else:
+        # Fallback: try ssh-agent or expect no passphrase
+        rsync_cmd = [
+            'rsync',
+            '-avz',
+            '--delete',
+            '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o BatchMode=yes',
+            f'{source_dir}/',
+            f'{server_user}@{server_ip}:{deploy_path}'
+        ]
     
     logger.info(f"Deploying to {server_name} ({server_ip})")
     
-    result = subprocess.run(rsync_cmd, capture_output=True, text=True)
+    # Set environment for ssh-agent if available
+    env = os.environ.copy()
+    
+    result = subprocess.run(rsync_cmd, capture_output=True, text=True, env=env)
     
     if result.returncode == 0:
         logger.info(f"Successfully deployed to {server_name}")
