@@ -12,6 +12,7 @@ import logging
 import subprocess
 import tempfile
 import shutil
+import fastapi
 from datetime import datetime
 from flask import Flask, request, jsonify
 from pathlib import Path
