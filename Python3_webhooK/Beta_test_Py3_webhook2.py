@@ -15,6 +15,7 @@ import shutil
 from datetime import datetime
 from flask import Flask, request, jsonify
 from pathlib import Path
+from fastapi import HTTPException, WebSocketException
 
 # Read the GitHub webhook secret from environment variable
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode("utf-8")
