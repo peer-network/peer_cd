@@ -80,7 +80,7 @@ def verify_signature(payload_body, signature_header):
     expected_signature = "sha256=" + hash_object.hexdigest()
 
 
-    logger.debug("Webhook compare: ", WEBHOOK_SECRET, "//n ", expected_signature, "//n")
+    print("Webhook compare: ", WEBHOOK_SECRET, "//n ", expected_signature, "//n")
 
     if not signature_header:
         raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
