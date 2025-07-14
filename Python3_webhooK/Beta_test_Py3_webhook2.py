@@ -41,7 +41,7 @@ TARGET_SERVERS = {
     }
 }
 
-# Setup logging
+# Setup logging, not update for logging
 def setup_logging():
     """Setup logging configuration"""
     os.makedirs(LOG_DIR, exist_ok=True)
