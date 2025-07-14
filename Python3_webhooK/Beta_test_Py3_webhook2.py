@@ -12,15 +12,12 @@ import logging
 import subprocess
 import tempfile
 import shutil
-import fastapi
 from datetime import datetime
 from flask import Flask, request, jsonify
 from pathlib import Path
-from fastapi import HTTPException, WebSocketException
 
 # Read the GitHub webhook secret from environment variable
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode("utf-8")
-
 
 # Your target GitHub repo
 TARGET_REPO = "peer-network/peer_cd"
@@ -29,9 +26,7 @@ TARGET_REPO = "peer-network/peer_cd"
 TARGET_BRANCH = "refs/heads/dev"
 SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa"
 
-
 # Configuration
-
 LOG_DIR = '/var/log/webhook/'
 PROCESSING_DIR = '/var/log/webhook/events/'
 REPO_CLONE_DIR = '/tmp/peer_cd/'
@@ -182,34 +177,46 @@ def process_deployment(webhook_data):
     
     return deployment_success
 
+def verify_signature(payload_body, signature_header, secret):
+    """Verify GitHub webhook signature"""
+    if not signature_header:
+        return False
+    
+    # Compute expected signature
+    hash_object = hmac.new(secret, msg=payload_body, digestmod=hashlib.sha256)
+    expected_signature = "sha256=" + hash_object.hexdigest()
+    
+    # Compare signatures
+    return hmac.compare_digest(expected_signature, signature_header)
 
 @app.route('/webhook', methods=['POST'])
 @app.route('/deploy-hook', methods=['POST'])  # Add your custom path
 def handle_webhook():
     """Handle GitHub webhook requests"""
-
-    payload_body = request.data  # <-- Critical: raw bytes for HMAC
-
+    
+    payload_body = request.data  # Raw bytes for HMAC
     signature_header = request.headers.get('X-Hub-Signature-256')
     event_type = request.headers.get('X-GitHub-Event')
-
-    if not signature_header:
-        raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
-
-    # Compute expected signature
-    hash_object = hmac.new(WEBHOOK_SECRET, msg=payload_body, digestmod=hashlib.sha256)
-    expected_signature = "sha256=" + hash_object.hexdigest()
-
-
-    if not hmac.compare_digest(expected_signature, signature_header):
-        raise HTTPException(status_code=403, detail="Request signatures didn't match!")
     
-    if not hmac.compare_digest(f"sha256={expected_signature}", signature_header):
-        raise HTTPException(status_code=401, detail="Request signatures didn't match!")
-
-
+    logger.info(f"Received webhook event: {event_type}")
+    
+    # Verify signature if secret is configured
+    if WEBHOOK_SECRET:
+        if not verify_signature(payload_body, signature_header, WEBHOOK_SECRET):
+            logger.error("Webhook signature verification failed")
+            return jsonify({'status': 'error', 'message': 'Invalid signature'}), 401
+    else:
+        logger.warning("No webhook secret configured - skipping signature verification")
+    
     # Parse webhook data
-    webhook_data = request.get_json()
+    try:
+        webhook_data = request.get_json()
+        if not webhook_data:
+            logger.error("No JSON data in webhook request")
+            return jsonify({'status': 'error', 'message': 'No JSON data'}), 400
+    except Exception as e:
+        logger.error(f"Failed to parse webhook JSON: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Invalid JSON'}), 400
     
     # Log webhook data for testing
     log_file = log_webhook_data(webhook_data, event_type)
@@ -218,6 +225,17 @@ def handle_webhook():
     if event_type != 'push':
         logger.info(f"Ignoring event type: {event_type}")
         return jsonify({'status': 'ignored', 'event': event_type}), 200
+    
+    # Check if it's the target branch
+    if webhook_data.get('ref') != TARGET_BRANCH:
+        logger.info(f"Ignoring push to branch: {webhook_data.get('ref')}")
+        return jsonify({'status': 'ignored', 'reason': 'wrong branch'}), 200
+    
+    # Check if it's the target repository
+    repo_full_name = webhook_data.get('repository', {}).get('full_name', '')
+    if repo_full_name != TARGET_REPO:
+        logger.info(f"Ignoring push to repository: {repo_full_name}")
+        return jsonify({'status': 'ignored', 'reason': 'wrong repository'}), 200
     
     # Process deployment
     try:
@@ -264,6 +282,10 @@ if __name__ == '__main__':
     if not os.path.exists(SSH_KEY_PATH):
         logger.error(f"SSH key not found at {SSH_KEY_PATH}")
         exit(1)
+    
+    # Check webhook secret
+    if not WEBHOOK_SECRET:
+        logger.warning("No WEBHOOK_SECRET environment variable set - signature verification will be skipped")
     
     # Use port 5000 as requested
     port = int(os.environ.get('WEBHOOK_PORT', 5000))
