@@ -19,25 +19,30 @@ from pathlib import Path
 # Read the GitHub webhook secret from environment variable
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "").encode("utf-8")
 
+# Read GitHub token from environment variable
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
 # Your target GitHub repo
 TARGET_REPO = "peer-network/peer_cd"
 
-# Push to dev will triger web-hook.
+# Push to dev will trigger web-hook.
 TARGET_BRANCH = "refs/heads/dev"
-SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa_deploy"  # Use passphrase-less key for automation
+
+# Local deployment directory - where we'll keep the synced code
+LOCAL_DEPLOY_DIR = "/opt/application/"
 
 # Configuration
 LOG_DIR = '/var/log/webhook/'
 PROCESSING_DIR = '/var/log/webhook/events/'
 REPO_CLONE_DIR = '/tmp/peer_cd/'
 
-# Target servers configuration
+# Target servers configuration (for future rsync deployment)
 TARGET_SERVERS = {
     'monitor': {
         'ip': '172.16.0.20',
         'hostname': 'monitor',
-        'deploy_path': '/opt/application/',  # Adjust as needed
-        'user': 'deploy'  # Adjust as needed
+        'deploy_path': '/opt/application/',
+        'user': 'deploy'
     }
 }
 
@@ -96,27 +101,49 @@ def extract_repo_info(webhook_data):
     
     return repo_info
 
-def clone_repository(repo_info):
-    """Clone repository to temporary directory"""
+def clone_or_pull_repository(repo_info):
+    """Clone repository or pull latest changes using GitHub token"""
     repo_name = repo_info['repository_name']
     clone_dir = os.path.join(REPO_CLONE_DIR, repo_name)
     
-    # Clean up existing directory
-    if os.path.exists(clone_dir):
-        shutil.rmtree(clone_dir)
+    # Create authenticated URL using GitHub token
+    repo_url = repo_info['repository_url']
+    if GITHUB_TOKEN:
+        # Replace https://github.com/ with https://TOKEN@github.com/
+        auth_url = repo_url.replace('https://github.com/', f'https://{GITHUB_TOKEN}@github.com/')
+    else:
+        auth_url = repo_url
+        logger.warning("No GitHub token configured - using public access")
     
     os.makedirs(REPO_CLONE_DIR, exist_ok=True)
+    
+    # If directory exists, try to pull instead of clone
+    if os.path.exists(clone_dir):
+        logger.info(f"Repository directory exists, pulling latest changes")
+        
+        # Change to repo directory and pull
+        cmd = ['git', '-C', clone_dir, 'pull', 'origin', repo_info['branch']]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            logger.warning(f"Pull failed, attempting fresh clone: {result.stderr}")
+            shutil.rmtree(clone_dir)
+        else:
+            logger.info(f"Successfully pulled latest changes")
+            return clone_dir
     
     # Clone repository
     cmd = [
         'git', 'clone', 
         '--branch', repo_info['branch'],
         '--depth', '1',
-        repo_info['repository_url'],
+        auth_url,
         clone_dir
     ]
     
+    logger.info(f"Cloning repository from {repo_url}")
     result = subprocess.run(cmd, capture_output=True, text=True)
+    
     if result.returncode != 0:
         logger.error(f"Failed to clone repository: {result.stderr}")
         return None
@@ -124,51 +151,30 @@ def clone_repository(repo_info):
     logger.info(f"Repository cloned to: {clone_dir}")
     return clone_dir
 
-def deploy_to_server(server_config, source_dir, repo_info):
-    """Deploy files to target server using rsync over SSH"""
-    server_name = server_config['hostname']
-    server_ip = server_config['ip']
-    server_user = server_config['user']
-    deploy_path = server_config['deploy_path']
+def deploy_locally(source_dir, repo_info):
+    """Deploy files to local deployment directory"""
+    if not os.path.exists(LOCAL_DEPLOY_DIR):
+        os.makedirs(LOCAL_DEPLOY_DIR, exist_ok=True)
+        logger.info(f"Created local deployment directory: {LOCAL_DEPLOY_DIR}")
     
-    # Get SSH key passphrase from environment
-    ssh_passphrase = os.environ.get('SSH_PASSPHRASE', '')
+    # Use rsync to sync files locally
+    rsync_cmd = [
+        'rsync',
+        '-avz',
+        '--delete',
+        f'{source_dir}/',
+        LOCAL_DEPLOY_DIR
+    ]
     
-    # Use ssh-agent or sshpass for passphrase handling
-    if ssh_passphrase:
-        # Option 1: Use sshpass (requires sshpass to be installed)
-        rsync_cmd = [
-            'sshpass', '-p', ssh_passphrase,
-            'rsync',
-            '-avz',
-            '--delete',
-            '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no -o PasswordAuthentication=no',
-            f'{source_dir}/',
-            f'{server_user}@{server_ip}:{deploy_path}'
-        ]
-    else:
-        # Fallback: try ssh-agent or expect no passphrase
-        rsync_cmd = [
-            'rsync',
-            '-avz',
-            '--delete',
-            '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o BatchMode=yes',
-            f'{source_dir}/',
-            f'{server_user}@{server_ip}:{deploy_path}'
-        ]
+    logger.info(f"Deploying to local directory: {LOCAL_DEPLOY_DIR}")
     
-    logger.info(f"Deploying to {server_name} ({server_ip})")
-    
-    # Set environment for ssh-agent if available
-    env = os.environ.copy()
-    
-    result = subprocess.run(rsync_cmd, capture_output=True, text=True, env=env)
+    result = subprocess.run(rsync_cmd, capture_output=True, text=True)
     
     if result.returncode == 0:
-        logger.info(f"Successfully deployed to {server_name}")
+        logger.info(f"Successfully deployed to {LOCAL_DEPLOY_DIR}")
         return True
     else:
-        logger.error(f"Failed to deploy to {server_name}: {result.stderr}")
+        logger.error(f"Failed to deploy locally: {result.stderr}")
         return False
 
 def process_deployment(webhook_data):
@@ -177,22 +183,28 @@ def process_deployment(webhook_data):
     
     logger.info(f"Processing deployment for {repo_info['repository_name']}")
     logger.info(f"Branch: {repo_info['branch']}, Commit: {repo_info['commit_sha']}")
+    logger.info(f"Commit message: {repo_info['commit_message']}")
+    logger.info(f"Author: {repo_info['author']}")
     
-    # Clone repository
-    clone_dir = clone_repository(repo_info)
+    # Clone or pull repository
+    clone_dir = clone_or_pull_repository(repo_info)
     if not clone_dir:
         return False
     
-    # Deploy to each target server
-    deployment_success = True
-    for server_name, server_config in TARGET_SERVERS.items():
-        success = deploy_to_server(server_config, clone_dir, repo_info)
-        if not success:
-            deployment_success = False
+    # Deploy locally first
+    deployment_success = deploy_locally(clone_dir, repo_info)
     
-    # Clean up cloned directory
-    if os.path.exists(clone_dir):
-        shutil.rmtree(clone_dir)
+    if deployment_success:
+        logger.info("Local deployment completed successfully")
+        
+        # TODO: Future enhancement - deploy to remote servers
+        # for server_name, server_config in TARGET_SERVERS.items():
+        #     success = deploy_to_server(server_config, clone_dir, repo_info)
+        #     if not success:
+        #         deployment_success = False
+    
+    # Note: We're not cleaning up the cloned directory anymore 
+    # so we can do incremental pulls instead of full clones
     
     return deployment_success
 
@@ -297,16 +309,29 @@ def get_recent_logs():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # Check SSH key exists
-    if not os.path.exists(SSH_KEY_PATH):
-        logger.error(f"SSH key not found at {SSH_KEY_PATH}")
-        exit(1)
+    # Check GitHub token
+    if not GITHUB_TOKEN:
+        logger.warning("No GITHUB_TOKEN environment variable set - only public repositories will work")
     
     # Check webhook secret
     if not WEBHOOK_SECRET:
         logger.warning("No WEBHOOK_SECRET environment variable set - signature verification will be skipped")
     
+    # Create local deployment directory if it doesn't exist
+    if not os.path.exists(LOCAL_DEPLOY_DIR):
+        try:
+            os.makedirs(LOCAL_DEPLOY_DIR, exist_ok=True)
+            logger.info(f"Created local deployment directory: {LOCAL_DEPLOY_DIR}")
+        except Exception as e:
+            logger.error(f"Failed to create local deployment directory: {e}")
+            logger.info("Deployment will happen in /tmp/deployment instead")
+            LOCAL_DEPLOY_DIR = "/tmp/deployment"
+            os.makedirs(LOCAL_DEPLOY_DIR, exist_ok=True)
+    
     # Use port 5000 as requested
     port = int(os.environ.get('WEBHOOK_PORT', 5000))
     logger.info(f"Starting GitHub webhook server on port {port}")
+    logger.info(f"Target repository: {TARGET_REPO}")
+    logger.info(f"Target branch: {TARGET_BRANCH}")
+    logger.info(f"Local deployment directory: {LOCAL_DEPLOY_DIR}")
     app.run(host='0.0.0.0', port=port, debug=False)
