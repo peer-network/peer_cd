@@ -67,30 +67,6 @@ logger = setup_logging()
 
 app = Flask(__name__)
 
-def verify_signature(payload_body, signature_header):
-    """Verify GitHub webhook signature"""
-
-    expected_signature = hmac.new(
-        WEBHOOK_SECRET,
-        payload_body,
-        hashlib.sha256
-    ).hexdigest()
-    
-    hash_object = hmac.new(WEBHOOK_SECRET, msg=payload_body, digestmod=hashlib.sha256)
-    expected_signature = "sha256=" + hash_object.hexdigest()
-
-
-    print("Webhook compare: ", WEBHOOK_SECRET, "//n ", expected_signature, "//n")
-
-    if not signature_header:
-        raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
-
-
-    if not hmac.compare_digest(expected_signature, signature_header):
-        raise HTTPException(status_code=403, detail="Request signatures didn't match!")
-    
-    return hmac.compare_digest(f"sha256={expected_signature}", signature_header)
-
 def log_webhook_data(webhook_data, event_type):
     """Log webhook data for testing and verification"""
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -207,19 +183,34 @@ def process_deployment(webhook_data):
     return deployment_success
 
 
-
 @app.route('/webhook', methods=['POST'])
 @app.route('/deploy-hook', methods=['POST'])  # Add your custom path
 def handle_webhook():
     """Handle GitHub webhook requests"""
+
+    expected_signature = hmac.new(
+        WEBHOOK_SECRET,
+        payload_body,
+        hashlib.sha256
+    ).hexdigest()
+    
+    hash_object = hmac.new(WEBHOOK_SECRET, msg=payload_body, digestmod=hashlib.sha256)
+    expected_signature = "sha256=" + hash_object.hexdigest()
+
     signature = request.headers.get('X-Hub-Signature-256')
     event_type = request.headers.get('X-GitHub-Event')
 
-    # Verify signature
-    if not verify_signature(request.data, signature):
-        logger.warning("Invalid webhook signature", signature)
-        return jsonify({'error': 'Invalid signature'}), 401
+
+    if not signature_header:
+        raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
+
+    if not hmac.compare_digest(expected_signature, signature_header):
+        raise HTTPException(status_code=403, detail="Request signatures didn't match!")
     
+    if not hmac.compare_digest(f"sha256={expected_signature}", signature_header):
+        raise HTTPException(status_code=401, detail="Request signatures didn't match!")
+
+
     # Parse webhook data
     webhook_data = request.get_json()
     
