@@ -75,11 +75,15 @@ def verify_signature(payload_body, signature_header):
         payload_body,
         hashlib.sha256
     ).hexdigest()
+    expected_signature = "sha256=" + hash_object.hexdigest()
+
+
+    logger.debug("Webhook compare: ", WEBHOOK_SECRET, "//n ", expected_signature, "//n")
 
     if not signature_header:
         raise HTTPException(status_code=403, detail="x-hub-signature-256 header is missing!")
     hash_object = hmac.new(WEBHOOK_SECRET, msg=payload_body, digestmod=hashlib.sha256)
-    expected_signature = "sha256=" + hash_object.hexdigest()
+
     if not hmac.compare_digest(expected_signature, signature_header):
         raise HTTPException(status_code=403, detail="Request signatures didn't match!")
     
