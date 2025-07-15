@@ -282,7 +282,11 @@ def process_deployment(webhook_data):
     #
     #if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
 
-    if any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+
+    webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+    logger.info(f"Is there webhook update: {webhook_updated}")
+    
+    if webhook_data:
         logger.info(f"Self update needed: {script_path} from {LOCAL_DEPLOY_DIR}.")
         try:
             # Pull new code
