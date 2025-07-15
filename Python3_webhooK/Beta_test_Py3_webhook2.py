@@ -281,7 +281,9 @@ def process_deployment(webhook_data):
     #  To self update the webhook
     #
     #if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+
     if any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+        logger.info(f"Self update needed: {script_path} from {LOCAL_DEPLOY_DIR}.")
         try:
             # Pull new code
             subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
@@ -290,7 +292,7 @@ def process_deployment(webhook_data):
             return True
 
         except subprocess.CalledProcessError as e:
-            print(f"[ERROR] Self-update failed: {e}")
+            logger.error(f"[ERROR] Self-update failed: {e}")
             return False
         
         return jsonify({'status': 'restarting'}), 202
