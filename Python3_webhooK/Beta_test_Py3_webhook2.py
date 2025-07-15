@@ -370,4 +370,5 @@ if __name__ == '__main__':
     logger.info(f"Target repository: {TARGET_REPO}")
     logger.info(f"Target branch: {TARGET_BRANCH}")
     logger.info(f"Local deployment directory: {LOCAL_DEPLOY_DIR}")
+    ### Flask webserver (simple might need to change later)
     app.run(host='0.0.0.0', port=port, debug=False)
