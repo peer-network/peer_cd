@@ -63,6 +63,7 @@ TEST_CONFIGS = {
     }
 }
 
+
 def setup_logging():
     """Setup logging to use the same log file as webhook"""
     log_file = os.path.join(LOG_DIR, 'webhook.log')
@@ -76,6 +77,8 @@ def setup_logging():
     )
     return logging.getLogger('post_deploy')
 
+
+###  Look above
 logger = setup_logging()
 
 def log_deployment_info():
