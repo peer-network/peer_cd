@@ -3,6 +3,9 @@
 GitHub Webhook Server for Jump Host Deployment
 Handles GitHub push events and deploys to target servers via rsync/ssh
 This will allo peer to puch to various servers on the admin adn backend lines.
+
+The target of the webhook in the testing jump host. 
+When the push is successful then a bash script rsyncs the other servers the chagnes.
 """
 
 import os
@@ -50,7 +53,7 @@ TARGET_SERVERS = {
 # Setup logging
 def setup_logging():
     """Setup logging configuration"""
-    os.makedirs(LOG_DIR, exist_ok=True)
+    os.makedirs(LOG_DIR, exist_ok=True)    # /var/log/webhook/
     os.makedirs(PROCESSING_DIR, exist_ok=True)
     
     log_file = os.path.join(LOG_DIR, 'webhook.log')
@@ -203,6 +206,8 @@ def process_deployment(webhook_data):
         #     success = deploy_to_server(server_config, clone_dir, repo_info)
         #     if not success:
         #         deployment_success = False
+        #
+        # Set to run a bash script to rsync to the other servers when needed.
     
     # Note: We're not cleaning up the cloned directory anymore 
     # so we can do incremental pulls instead of full clones
@@ -230,6 +235,7 @@ def handle_webhook():
     signature_header = request.headers.get('X-Hub-Signature-256')
     event_type = request.headers.get('X-GitHub-Event')
     
+    logger.info(f"=== Initiated githut event proccess ===")
     logger.info(f"Received webhook event: {event_type}")
     
     # Verify signature if secret is configured
@@ -253,6 +259,7 @@ def handle_webhook():
     # Log webhook data for testing
     log_file = log_webhook_data(webhook_data, event_type)
     
+    ### Proccess github action (push, branch and repo)
     # Only process push events
     if event_type != 'push':
         logger.info(f"Ignoring event type: {event_type}")
