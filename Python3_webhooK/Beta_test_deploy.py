@@ -30,7 +30,7 @@ TARGET_SERVERS = {
         'ip': '172.16.0.20',
         'hostname': 'monitor',
         'deploy_path': '/opt/application/',
-        'user': 'deploy'
+        'user': 'ubuntu'
     },
     # Add more servers as needed
     # 'web-server': {

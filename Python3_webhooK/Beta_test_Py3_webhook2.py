@@ -274,15 +274,14 @@ def process_deployment(webhook_data):
     deployment_success = deploy_locally(clone_dir, repo_info)
     
     if deployment_success:
-        logger.info("Local deployment completed successfully")
+        logger.info("Local pull completed successfully")
 
 
     ## If I need to update this code (webhook)
     #  To self update the webhook
     #
-    if any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
-
     #if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+    if any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
         try:
             # Pull new code
             subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
