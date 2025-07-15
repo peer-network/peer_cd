@@ -283,7 +283,7 @@ def process_deployment(webhook_data):
     #if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
 
 
-    webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+    webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified'])
     logger.info(f"Is there webhook update: {webhook_updated}")
     
     if webhook_data:
