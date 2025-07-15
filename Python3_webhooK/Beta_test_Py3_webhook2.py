@@ -16,6 +16,7 @@ import logging
 import subprocess
 import tempfile
 import shutil
+import subprocess
 from datetime import datetime
 from flask import Flask, request, jsonify
 from pathlib import Path
@@ -170,7 +171,7 @@ def clone_or_pull_repository(repo_info):
     return clone_dir
 
 
-### Now deploy to the main (tmp) directory 
+### Now deploy to the main (opt/application) directory 
 ##  Add the updated files from the pull
 ##  Rsync to the local dir
 def deploy_locally(source_dir, repo_info):
@@ -199,6 +200,59 @@ def deploy_locally(source_dir, repo_info):
         logger.error(f"Failed to deploy locally: {result.stderr}")
         return False
 
+
+### If the pull is successful then test and deploy to the target servers
+##    
+##
+def run_post_deployment_script(repo_info):
+    """Run the post-deployment script for testing and remote deployment"""
+    script_path = "/home/ubuntu/myenv/peer_cd/Python3_webhooK/Beta_test_deploy.py"
+    
+    if not os.path.exists(script_path):
+        logger.warning(f"Post-deployment script not found at {script_path}")
+        return True  # Don't fail webhook if script doesn't exist
+    
+    logger.info("Running post-deployment script...")
+    
+    # Run the script with repository info as environment variables
+    env = os.environ.copy()
+    env.update({
+        'REPO_NAME': repo_info['repository_name'],
+        'REPO_BRANCH': repo_info['branch'],
+        'COMMIT_SHA': repo_info['commit_sha'] or '',
+        'COMMIT_MESSAGE': repo_info['commit_message'] or '',
+        'AUTHOR': repo_info['author'] or '',
+        'DEPLOY_DIR': LOCAL_DEPLOY_DIR
+    })
+    
+    try:
+        result = subprocess.run(
+            ['python3', script_path],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            logger.info("Post-deployment script completed successfully")
+            if result.stdout.strip():
+                logger.info(f"Script output: {result.stdout.strip()}")
+            return True
+        else:
+            logger.error(f"Post-deployment script failed with exit code {result.returncode}")
+            if result.stderr.strip():
+                logger.error(f"Script error: {result.stderr.strip()}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        logger.error("Post-deployment script timed out after 5 minutes")
+        return False
+    except Exception as e:
+        logger.error(f"Error running post-deployment script: {str(e)}")
+        return False
+
+
 ### Where the actions after a good pull is proccessed
 ##  Either call a shell script or porceess by python
 ##
@@ -221,14 +275,25 @@ def process_deployment(webhook_data):
     
     if deployment_success:
         logger.info("Local deployment completed successfully")
-        
-        # TODO: Future enhancement - deploy to remote servers
-        # for server_name, server_config in TARGET_SERVERS.items():
-        #     success = deploy_to_server(server_config, clone_dir, repo_info)
-        #     if not success:
-        #         deployment_success = False
-        #
-        # Set to run a bash script to rsync to the other servers when needed.
+
+
+    ### If I need to update this code (webhook)
+    ##  To self update the webhook
+    ##
+    if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
+        try:
+            # Pull new code
+            subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
+            # Restart the systemd service
+            subprocess.run(["sudo", "systemctl", "restart", "webhook_py_github.service"], check=True)
+            
+            return True
+        except subprocess.CalledProcessError as e:
+            print(f"[ERROR] Self-update failed: {e}")
+            return False
+        return jsonify({'status': 'restarting'}), 202
+
+
     
     # Note: We're not cleaning up the cloned directory anymore 
     # so we can do incremental pulls instead of full clones

@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""
+Post-Deployment Script for Testing and Remote Deployment
+Runs unit tests (Python, PHP, Bash) and syncs to remote servers
+"""
+
+import os
+import sys
+import logging
+import subprocess
+import json
+from datetime import datetime
+from pathlib import Path
+
+# Get environment variables passed from webhook
+REPO_NAME = os.environ.get('REPO_NAME', 'unknown')
+REPO_BRANCH = os.environ.get('REPO_BRANCH', 'unknown')
+COMMIT_SHA = os.environ.get('COMMIT_SHA', 'unknown')
+COMMIT_MESSAGE = os.environ.get('COMMIT_MESSAGE', 'unknown')
+AUTHOR = os.environ.get('AUTHOR', 'unknown')
+DEPLOY_DIR = os.environ.get('DEPLOY_DIR', '/opt/application/')
+
+# Configuration
+LOG_DIR = '/var/log/webhook/'
+SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa"
+
+# Target servers for rsync deployment
+TARGET_SERVERS = {
+    'monitor': {
+        'ip': '172.16.0.20',
+        'hostname': 'monitor',
+        'deploy_path': '/opt/application/',
+        'user': 'deploy'
+    },
+    # Add more servers as needed
+    # 'web-server': {
+    #     'ip': '172.16.0.21',
+    #     'hostname': 'web-server',
+    #     'deploy_path': '/var/www/html/',
+    #     'user': 'www-data'
+    # }
+}
+
+# Test configuration
+TEST_CONFIGS = {
+    'python': {
+        'enabled': True,
+        'test_file': 'test_runner.py',
+        'command': ['python3', 'test_runner.py'],
+        'timeout': 60
+    },
+    'php': {
+        'enabled': True,
+        'test_file': 'test_runner.php',
+        'command': ['php', 'test_runner.php'],
+        'timeout': 60
+    },
+    'bash': {
+        'enabled': True,
+        'test_file': 'test_runner.sh',
+        'command': ['bash', 'test_runner.sh'],
+        'timeout': 60
+    }
+}
+
+def setup_logging():
+    """Setup logging to use the same log file as webhook"""
+    log_file = os.path.join(LOG_DIR, 'webhook.log')
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+    return logging.getLogger('post_deploy')
+
+logger = setup_logging()
+
+def log_deployment_info():
+    """Log deployment information"""
+    logger.info("=" * 60)
+    logger.info("POST-DEPLOYMENT SCRIPT STARTED")
+    logger.info("=" * 60)
+    logger.info(f"Repository: {REPO_NAME}")
+    logger.info(f"Branch: {REPO_BRANCH}")
+    logger.info(f"Commit: {COMMIT_SHA}")
+    logger.info(f"Message: {COMMIT_MESSAGE}")
+    logger.info(f"Author: {AUTHOR}")
+    logger.info(f"Deploy Directory: {DEPLOY_DIR}")
+    logger.info("=" * 60)
+
+def run_tests():
+    """Run unit tests for Python, PHP, and Bash"""
+    logger.info("Starting unit tests...")
+    
+    test_results = {}
+    overall_success = True
+    
+    for test_type, config in TEST_CONFIGS.items():
+        if not config['enabled']:
+            logger.info(f"Skipping {test_type} tests (disabled)")
+            continue
+            
+        test_file = os.path.join(DEPLOY_DIR, config['test_file'])
+        
+        if not os.path.exists(test_file):
+            logger.warning(f"Test file not found: {test_file}")
+            test_results[test_type] = {'status': 'skipped', 'reason': 'test file not found'}
+            continue
+        
+        logger.info(f"Running {test_type} tests...")
+        
+        try:
+            # Change to deploy directory to run tests
+            result = subprocess.run(
+                config['command'],
+                cwd=DEPLOY_DIR,
+                capture_output=True,
+                text=True,
+                timeout=config['timeout']
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"{test_type} tests PASSED")
+                test_results[test_type] = {'status': 'passed', 'output': result.stdout}
+            else:
+                logger.error(f"{test_type} tests FAILED")
+                logger.error(f"Exit code: {result.returncode}")
+                if result.stderr:
+                    logger.error(f"Error output: {result.stderr}")
+                test_results[test_type] = {
+                    'status': 'failed', 
+                    'exit_code': result.returncode,
+                    'stderr': result.stderr,
+                    'stdout': result.stdout
+                }
+                overall_success = False
+                
+        except subprocess.TimeoutExpired:
+            logger.error(f"{test_type} tests TIMED OUT after {config['timeout']} seconds")
+            test_results[test_type] = {'status': 'timeout'}
+            overall_success = False
+            
+        except Exception as e:
+            logger.error(f"Error running {test_type} tests: {str(e)}")
+            test_results[test_type] = {'status': 'error', 'error': str(e)}
+            overall_success = False
+    
+    # Log test summary
+    logger.info("=" * 40)
+    logger.info("TEST SUMMARY")
+    logger.info("=" * 40)
+    for test_type, result in test_results.items():
+        logger.info(f"{test_type.upper()}: {result['status'].upper()}")
+    logger.info("=" * 40)
+    
+    return overall_success, test_results
+
+def deploy_to_server(server_config):
+    """Deploy files to a remote server using rsync over SSH"""
+    server_name = server_config['hostname']
+    server_ip = server_config['ip']
+    server_user = server_config['user']
+    deploy_path = server_config['deploy_path']
+    
+    logger.info(f"Deploying to {server_name} ({server_ip})")
+    
+    # Check if SSH key exists
+    if not os.path.exists(SSH_KEY_PATH):
+        logger.error(f"SSH key not found at {SSH_KEY_PATH}")
+        return False
+    
+    # Rsync command
+    rsync_cmd = [
+        'rsync',
+        '-avz',
+        '--delete',
+        '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no',
+        f'{DEPLOY_DIR}/',
+        f'{server_user}@{server_ip}:{deploy_path}'
+    ]
+    
+    try:
+        result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=300)
+        
+        if result.returncode == 0:
+            logger.info(f"Successfully deployed to {server_name}")
+            return True
+        else:
+            logger.error(f"Failed to deploy to {server_name}")
+            logger.error(f"Exit code: {result.returncode}")
+            if result.stderr:
+                logger.error(f"Error: {result.stderr}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        logger.error(f"Deployment to {server_name} timed out")
+        return False
+    except Exception as e:
+        logger.error(f"Error deploying to {server_name}: {str(e)}")
+        return False
+
+def deploy_to_remote_servers():
+    """Deploy to all configured remote servers"""
+    logger.info("Starting remote server deployment...")
+    
+    deployment_results = {}
+    overall_success = True
+    
+    for server_name, server_config in TARGET_SERVERS.items():
+        success = deploy_to_server(server_config)
+        deployment_results[server_name] = success
+        
+        if not success:
+            overall_success = False
+    
+    # Log deployment summary
+    logger.info("=" * 40)
+    logger.info("DEPLOYMENT SUMMARY")
+    logger.info("=" * 40)
+    for server_name, success in deployment_results.items():
+        status = "SUCCESS" if success else "FAILED"
+        logger.info(f"{server_name}: {status}")
+    logger.info("=" * 40)
+    
+    return overall_success, deployment_results
+
+def save_deployment_report(test_results, deployment_results):
+    """Save a detailed deployment report"""
+    report = {
+        'timestamp': datetime.now().isoformat(),
+        'repository': REPO_NAME,
+        'branch': REPO_BRANCH,
+        'commit_sha': COMMIT_SHA,
+        'commit_message': COMMIT_MESSAGE,
+        'author': AUTHOR,
+        'test_results': test_results,
+        'deployment_results': deployment_results
+    }
+    
+    report_file = os.path.join(LOG_DIR, 'events', f'deployment_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json')
+    
+    try:
+        with open(report_file, 'w') as f:
+            json.dump(report, f, indent=2)
+        logger.info(f"Deployment report saved to: {report_file}")
+    except Exception as e:
+        logger.error(f"Failed to save deployment report: {str(e)}")
+
+def main():
+    """Main post-deployment workflow"""
+    log_deployment_info()
+    
+    # Step 1: Run unit tests
+    test_success, test_results = run_tests()
+    
+    if not test_success:
+        logger.error("Unit tests failed - aborting remote deployment")
+        save_deployment_report(test_results, {})
+        return 1
+    
+    # Step 2: Deploy to remote servers
+    deploy_success, deployment_results = deploy_to_remote_servers()
+    
+    # Step 3: Save deployment report
+    save_deployment_report(test_results, deployment_results)
+    
+    # Final status
+    if test_success and deploy_success:
+        logger.info("POST-DEPLOYMENT COMPLETED SUCCESSFULLY")
+        return 0
+    else:
+        logger.error("POST-DEPLOYMENT FAILED")
+        return 1
+
+if __name__ == '__main__':
+    exit_code = main()
+    sys.exit(exit_code)
