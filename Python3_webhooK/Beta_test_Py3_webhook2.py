@@ -50,7 +50,8 @@ TARGET_SERVERS = {
     }
 }
 
-# Setup logging
+### Initial Setup logging
+##  Is the directories for logging there
 def setup_logging():
     """Setup logging configuration"""
     os.makedirs(LOG_DIR, exist_ok=True)    # /var/log/webhook/
@@ -71,6 +72,10 @@ logger = setup_logging()
 
 app = Flask(__name__)
 
+
+### Gather and log the actions from the webhook
+##  What it is, and does it work
+##  log the errors when needed
 def log_webhook_data(webhook_data, event_type):
     """Log webhook data for testing and verification"""
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -82,6 +87,10 @@ def log_webhook_data(webhook_data, event_type):
     logger.info(f"Webhook data logged to: {log_file}")
     return log_file
 
+
+### Parse the webhook data
+##  sperate the heeder and certificate data from the payload
+##  
 def extract_repo_info(webhook_data):
     """Extract useful repository information from webhook data"""
     repo_info = {
@@ -97,7 +106,7 @@ def extract_repo_info(webhook_data):
         'removed_files': []
     }
     
-    # Extract file changes
+    # Extract file changes (The Commits)
     if webhook_data.get('head_commit'):
         repo_info['modified_files'] = webhook_data['head_commit'].get('modified', [])
         repo_info['added_files'] = webhook_data['head_commit'].get('added', [])
@@ -105,6 +114,10 @@ def extract_repo_info(webhook_data):
     
     return repo_info
 
+
+### Initalize with clone
+##  Then pull the changes from github
+##
 def clone_or_pull_repository(repo_info):
     """Clone repository or pull latest changes using GitHub token"""
     repo_name = repo_info['repository_name']
@@ -129,6 +142,7 @@ def clone_or_pull_repository(repo_info):
         cmd = ['git', '-C', clone_dir, 'pull', 'origin', repo_info['branch']]
         result = subprocess.run(cmd, capture_output=True, text=True)
         
+        ### remove the clone directory if there need (failed pull, or initialize)
         if result.returncode != 0:
             logger.warning(f"Pull failed, attempting fresh clone: {result.stderr}")
             shutil.rmtree(clone_dir)
@@ -155,6 +169,10 @@ def clone_or_pull_repository(repo_info):
     logger.info(f"Repository cloned to: {clone_dir}")
     return clone_dir
 
+
+### Now deploy to the main (tmp) directory 
+##  Add the updated files from the pull
+##  Rsync to the local dir
 def deploy_locally(source_dir, repo_info):
     """Deploy files to local deployment directory"""
     if not os.path.exists(LOCAL_DEPLOY_DIR):
@@ -181,6 +199,9 @@ def deploy_locally(source_dir, repo_info):
         logger.error(f"Failed to deploy locally: {result.stderr}")
         return False
 
+### Where the actions after a good pull is proccessed
+##  Either call a shell script or porceess by python
+##
 def process_deployment(webhook_data):
     """Process the deployment based on webhook data"""
     repo_info = extract_repo_info(webhook_data)
@@ -194,7 +215,7 @@ def process_deployment(webhook_data):
     clone_dir = clone_or_pull_repository(repo_info)
     if not clone_dir:
         return False
-    
+
     # Deploy locally first
     deployment_success = deploy_locally(clone_dir, repo_info)
     
@@ -214,6 +235,9 @@ def process_deployment(webhook_data):
     
     return deployment_success
 
+### webhook proccess
+##  github signature with payload
+##
 def verify_signature(payload_body, signature_header, secret):
     """Verify GitHub webhook signature"""
     if not signature_header:
@@ -226,6 +250,9 @@ def verify_signature(payload_body, signature_header, secret):
     # Compare signatures
     return hmac.compare_digest(expected_signature, signature_header)
 
+### Main webhook checking
+##  Where from, is valid, github, branch, ...abs
+##
 @app.route('/webhook', methods=['POST'])
 @app.route('/deploy-hook', methods=['POST'])  # Add your custom path
 def handle_webhook():
@@ -277,6 +304,7 @@ def handle_webhook():
         return jsonify({'status': 'ignored', 'reason': 'wrong repository'}), 200
     
     # Process deployment
+    # return status
     try:
         success = process_deployment(webhook_data)
         if success:
@@ -335,11 +363,11 @@ if __name__ == '__main__':
             logger.info("Deployment will happen in /tmp/deployment instead")
             LOCAL_DEPLOY_DIR = "/tmp/deployment"
             os.makedirs(LOCAL_DEPLOY_DIR, exist_ok=True)
-    
+
     # Use port 5000 as requested
     port = int(os.environ.get('WEBHOOK_PORT', 5000))
     logger.info(f"Starting GitHub webhook server on port {port}")
     logger.info(f"Target repository: {TARGET_REPO}")
     logger.info(f"Target branch: {TARGET_BRANCH}")
     logger.info(f"Local deployment directory: {LOCAL_DEPLOY_DIR}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    # app.run(host='0.0.0.0', port=port, debug=False)
