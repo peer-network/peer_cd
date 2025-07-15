@@ -252,6 +252,28 @@ def run_post_deployment_script(repo_info):
         logger.error(f"Error running post-deployment script: {str(e)}")
         return False
 
+    ## If I need to update this code (webhook)
+    #  To self update the webhook
+    #  This should be the LAST event done for this deployment
+    #
+    webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified'])
+    logger.info(f"Is there webhook update: {webhook_updated}")
+    
+    if webhook_data:
+        logger.info(f"Self update needed: /home/ubuntu/myenv/peer_cd/ from {LOCAL_DEPLOY_DIR}.")
+        try:
+            # Pull new code
+            subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
+            # Restart the systemd service
+            subprocess.run(["sudo", "systemctl", "restart", "webhook_py_github.service"], check=True)
+            return True
+
+        except subprocess.CalledProcessError as e:
+            logger.error(f"[ERROR] Self-update failed: {e}")
+            return False
+        
+        return jsonify({'status': 'restarting'}), 202
+
 
 ### Where the actions after a good pull is proccessed
 ##  Either call a shell script or porceess by python
@@ -275,33 +297,16 @@ def process_deployment(webhook_data):
     
     if deployment_success:
         logger.info("Local pull completed successfully")
-
-
-    ## If I need to update this code (webhook)
-    #  To self update the webhook
-    #
-    webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['heads']['modified'])
-    logger.info(f"Is there webhook update: {webhook_updated}")
-    
-    if webhook_data:
-        logger.info(f"Self update needed: /home/ubuntu/myenv/peer_cd/ from {LOCAL_DEPLOY_DIR}.")
-        try:
-            # Pull new code
-            subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
-            # Restart the systemd service
-            subprocess.run(["sudo", "systemctl", "restart", "webhook_py_github.service"], check=True)
-            return True
-
-        except subprocess.CalledProcessError as e:
-            logger.error(f"[ERROR] Self-update failed: {e}")
-            return False
-        
-        return jsonify({'status': 'restarting'}), 202
     
     ## Note: We're not cleaning up the cloned directory anymore 
     # so we can do incremental pulls instead of full clones
     #
-    # deploy script here
+        deploy_error = run_post_deployment_script(repo_info)
+        if deploy_error:
+            logger.error(f"Deploy and Test")
+
+    ### End deploy
+
 
     return deployment_success
 
