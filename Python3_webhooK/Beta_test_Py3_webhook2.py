@@ -277,27 +277,28 @@ def process_deployment(webhook_data):
         logger.info("Local deployment completed successfully")
 
 
-    ### If I need to update this code (webhook)
-    ##  To self update the webhook
-    ##
+    ## If I need to update this code (webhook)
+    #  To self update the webhook
+    #
     if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified']):
         try:
             # Pull new code
             subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
             # Restart the systemd service
             subprocess.run(["sudo", "systemctl", "restart", "webhook_py_github.service"], check=True)
-            
             return True
+
         except subprocess.CalledProcessError as e:
             print(f"[ERROR] Self-update failed: {e}")
             return False
+        
         return jsonify({'status': 'restarting'}), 202
-
-
     
-    # Note: We're not cleaning up the cloned directory anymore 
+    ## Note: We're not cleaning up the cloned directory anymore 
     # so we can do incremental pulls instead of full clones
-    
+    #
+    # deploy script here
+
     return deployment_success
 
 ### webhook proccess
