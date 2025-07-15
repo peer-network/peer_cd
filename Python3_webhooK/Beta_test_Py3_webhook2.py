@@ -279,7 +279,6 @@ def process_deployment(webhook_data):
 
     ## If I need to update this code (webhook)
     #  To self update the webhook
-    #
     #if any(f['filename'].startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified'])
 
     webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified'])
