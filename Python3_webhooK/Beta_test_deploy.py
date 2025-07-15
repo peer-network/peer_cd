@@ -161,6 +161,8 @@ def run_tests():
     
     return overall_success, test_results
 
+### Simple rsync from opt/application/ to the peer_cd/ local repo
+##
 def deploy_to_server(server_config):
     """Deploy files to a remote server using rsync over SSH"""
     server_name = server_config['hostname']
