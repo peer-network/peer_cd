@@ -108,7 +108,7 @@ def log_deployment_info():
 
 ### Setup testing for the code updates for DevOps
 ##  For now only test for syntax (linting) 
-##  Maybe more later 
+##  Maybe more later set testing of all set types of files
 def run_tests():
     """Run unit tests for Python, PHP, and Bash"""
     logger.info("Starting unit tests...")
