@@ -53,4 +53,34 @@ This CD will be split between
 
 DevOps then can push to Dev easily and can test there changes.  When all parties are happy then a merge to Main and push to effect Prod.
 
+The /opt/application/ directory
 
+```
+.
+├── LICENSE
+├── Python3_webhooK           (main webhook for the infrasctuture)
+│   ├── Beta_test_Py3_webhook.py
+│   └── Beta_test_Py3_webhook2.py  (current)
+├── README.md
+├── monitoring-stack    (DevOps monitoring)
+│   ├── postman_collection
+│   │   ├── postman_collections.json
+│   │   └── postman_environment.json
+│   └── scripts
+│       ├── monitor_api.sh
+│       └── monitor_api_py.ph
+├── payload.json              (test .json)
+├── peer_cd_test_deploy       (Where the test and deploy scripts are located)
+│   ├── Beta_test_deploy.py   (Called from Python3_webhook2.py)
+│   ├── test_bash.sh
+│   ├── test_php.sh
+│   └── test_python.sh
+├── php-webhook               (update the backend)
+│   ├── deploy-backend.sh
+│   └── peer-deploy-hook.php
+├── restart-php.sh
+└── update-database.sh
+```
+
+There is are ssh-keys to allow the transfer to the update to the remote servers. rsync-key  
+This key will only push github changes to the needed places. 

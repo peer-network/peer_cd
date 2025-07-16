@@ -25,7 +25,7 @@ DEPLOY_DIR = os.environ.get('DEPLOY_DIR', '/opt/application/')
 
 # Configuration
 LOG_DIR = '/var/log/webhook/'
-SSH_KEY_PATH = "/home/ubuntu/.ssh/id_rsa"
+SSH_KEY_PATH = "/home/ubuntu/.ssh/rsync-key"
 
 # Target servers for rsync deployment
 TARGET_SERVERS = {
@@ -44,30 +44,33 @@ TARGET_SERVERS = {
     # }
 }
 
-# Test configuration
+### Test configuration
+##  Run the test scripts
+##
 TEST_CONFIGS = {
     'python': {
         'enabled': True,
         'test_file': 'test_runner.py',
-        'command': ['python3', 'test_runner.py'],
+        'command': ['bash', 'test_python.sh'],
         'timeout': 60
     },
     'php': {
         'enabled': True,
         'test_file': 'test_runner.php',
-        'command': ['php', 'test_runner.php'],
+        'command': ['bash', 'test_php.sh'],
         'timeout': 60
     },
     'bash': {
         'enabled': True,
         'test_file': 'test_runner.sh',
-        'command': ['bash', 'test_runner.sh'],
+        'command': ['bash', 'test_bash.sh'],
         'timeout': 60
     }
 }
 
 ### Use the logging file for the deployment as the webhook
 ##  this initalize the log for the deployment side of the ci/cd (deploy)
+##
 def setup_logging():
     """Setup logging to use the same log file as webhook"""
     log_file = os.path.join(LOG_DIR, 'webhook.log')
@@ -169,7 +172,7 @@ def run_tests():
     
     return overall_success, test_results
 
-### Simple rsync from opt/application/ to the peer_cd/ local repo
+### Simple rsync from opt/application/ to the peer_cd/local repo
 ##
 def deploy_to_server(server_config):
     """Deploy files to a remote server using rsync over SSH"""
