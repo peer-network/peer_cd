@@ -53,19 +53,19 @@ TARGET_SERVERS = {
 TEST_CONFIGS = {
     'python': {
         'enabled': True,
-        'extension': '*.py',
+        'extension': '.py',
         'command': ['bash', 'test_python.sh'],
         'timeout': 60
     },
     'php': {
         'enabled': True,
-        'extension': '*.php',
+        'extension': '.php',
         'command': ['bash', 'test_php.sh'],
         'timeout': 60
     },
     'bash': {
         'enabled': True,
-        'extension': '*.sh',
+        'extension': '.sh',
         'command': ['bash', 'test_bash.sh'],
         'timeout': 60
     }
