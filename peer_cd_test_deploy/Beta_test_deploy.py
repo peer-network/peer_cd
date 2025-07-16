@@ -90,6 +90,7 @@ logger = setup_logging()
 
 
 ### What to log 
+##  Log most data from the testing and deploy
 def log_deployment_info():
     """Log deployment information"""
     logger.info("=" * 60)
