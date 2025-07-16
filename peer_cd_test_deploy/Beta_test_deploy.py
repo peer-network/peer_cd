@@ -122,14 +122,15 @@ def run_tests():
             logger.info(f"Skipping {test_type} tests (disabled)")
             continue
             
-        # test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
-        #
+        ## Test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
+        #  Added logging of files 
         files_to_test = []
 
         for root, _, files in os.walk(DEPLOY_DIR):
             for file in files:
                 if file.endswith(config['extension']):
                     files_to_test.append(os.path.join(root, file))
+        logger.info(f"files_to_test for {config['extension']} : {files_to_test}")        
 
         if not files_to_test:
             logger.warning(f"No {test_type} files found to test.")
