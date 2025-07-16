@@ -206,7 +206,7 @@ def deploy_locally(source_dir, repo_info):
 ##
 def run_post_deployment_script(repo_info):
     """Run the post-deployment script for testing and remote deployment"""
-    script_path = "/home/ubuntu/myenv/peer_cd/Python3_webhooK/Beta_test_deploy.py"
+    script_path = "/home/ubuntu/myenv/peer_cd/peer_cd_test_deploy/Beta_test_deploy.py"
     
     if not os.path.exists(script_path):
         logger.warning(f"Post-deployment script not found at {script_path}")

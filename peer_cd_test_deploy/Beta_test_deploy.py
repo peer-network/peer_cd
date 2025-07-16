@@ -2,6 +2,9 @@
 """
 Post-Deployment Script for Testing and Remote Deployment
 Runs unit tests (Python, PHP, Bash) and syncs to remote servers
+
+This is the switchboard for DevOps, as the all (most) of the DevOps.
+So this is teh infrastructure for DevOps 
 """
 
 import os
@@ -63,7 +66,8 @@ TEST_CONFIGS = {
     }
 }
 
-
+### Use the logging file for the deployment as the webhook
+##  this initalize the log for the deployment side of the ci/cd (deploy)
 def setup_logging():
     """Setup logging to use the same log file as webhook"""
     log_file = os.path.join(LOG_DIR, 'webhook.log')
@@ -77,10 +81,11 @@ def setup_logging():
     )
     return logging.getLogger('post_deploy')
 
-
 ###  Look above
 logger = setup_logging()
 
+
+### What to log 
 def log_deployment_info():
     """Log deployment information"""
     logger.info("=" * 60)
@@ -94,6 +99,9 @@ def log_deployment_info():
     logger.info(f"Deploy Directory: {DEPLOY_DIR}")
     logger.info("=" * 60)
 
+### Setup testing for the code updates for DevOps
+##  For now only test for syntax (linting) 
+##  Maybe more later 
 def run_tests():
     """Run unit tests for Python, PHP, and Bash"""
     logger.info("Starting unit tests...")
