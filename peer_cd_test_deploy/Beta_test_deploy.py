@@ -22,7 +22,7 @@ COMMIT_SHA = os.environ.get('COMMIT_SHA', 'unknown')
 COMMIT_MESSAGE = os.environ.get('COMMIT_MESSAGE', 'unknown')
 AUTHOR = os.environ.get('AUTHOR', 'unknown')
 DEPLOY_DIR = os.environ.get('DEPLOY_DIR', '/opt/application/')
-LOCAL_TEST_DIR = os.environ.get('LOCAL_TEST_DIR', '/opt/application/peer_cd_test_deplo/')
+LOCAL_TEST_DIR = os.environ.get('LOCAL_TEST_DIR', '/opt/application/peer_cd_test_deploy/')
 
 # Configuration
 LOG_DIR = '/var/log/webhook/'
