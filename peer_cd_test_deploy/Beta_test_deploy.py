@@ -22,7 +22,7 @@ COMMIT_SHA = os.environ.get('COMMIT_SHA', 'unknown')
 COMMIT_MESSAGE = os.environ.get('COMMIT_MESSAGE', 'unknown')
 AUTHOR = os.environ.get('AUTHOR', 'unknown')
 DEPLOY_DIR = os.environ.get('DEPLOY_DIR', '/opt/application/')
-LOCAL_TEST_DIR = os.environ.get('LOCAL_TEST_DIR', '/opt/application/peer_cd_test_deploy')
+LOCAL_TEST_DIR = os.environ.get('LOCAL_TEST_DIR', '/opt/application/peer_cd_test_deplo/')
 
 # Configuration
 LOG_DIR = '/var/log/webhook/'
@@ -119,7 +119,7 @@ def run_tests():
             logger.info(f"Skipping {test_type} tests (disabled)")
             continue
             
-        test_file = os.path.join(DEPLOY_DIR, config['test_file'])
+        test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
         
         if not os.path.exists(test_file):
             logger.warning(f"Test file not found: {test_file}")
@@ -132,7 +132,7 @@ def run_tests():
             # Change to deploy directory to run tests
             result = subprocess.run(
                 config['command'],
-                cwd=DEPLOY_DIR,
+                cwd=LOCAL_TEST_DIR,
                 capture_output=True,
                 text=True,
                 timeout=config['timeout']
