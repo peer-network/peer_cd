@@ -212,6 +212,8 @@ def deploy_to_server(server_config):
         f'{server_user}@{server_ip}:{deploy_path}'
     ]
     
+    ## Try to reach the remote servers and send the data to the remote repos
+    #  Use rsync key
     try:
         result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=300)
         
@@ -223,6 +225,7 @@ def deploy_to_server(server_config):
             logger.error(f"Exit code: {result.returncode}")
             if result.stderr:
                 logger.error(f"Error: {result.stderr}")
+                logger.error(f"Command sent: {rsync_cmd}")
             return False
             
     except subprocess.TimeoutExpired:
