@@ -231,6 +231,8 @@ def deploy_to_server(server_config):
         logger.error(f"Error deploying to {server_name}: {str(e)}")
         return False
 
+### deploy by directory
+##
 def deploy_to_remote_servers():
     """Deploy to all configured remote servers"""
     logger.info("Starting remote server deployment...")
