@@ -130,6 +130,7 @@ def run_tests():
         
         try:
             # Change to deploy directory to run tests
+            # Set to local testing dir
             result = subprocess.run(
                 config['command'],
                 cwd=LOCAL_TEST_DIR,
