@@ -121,7 +121,8 @@ def run_tests():
             logger.info(f"Skipping {test_type} tests (disabled)")
             continue
             
-        #test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
+        # test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
+        #
         files_to_test = []
 
         for root, _, files in os.walk(DEPLOY_DIR):
