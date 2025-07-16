@@ -15,7 +15,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-# Get environment variables passed from webhook
+### Get environment variables passed from webhook
+##
 REPO_NAME = os.environ.get('REPO_NAME', 'unknown')
 REPO_BRANCH = os.environ.get('REPO_BRANCH', 'unknown')
 COMMIT_SHA = os.environ.get('COMMIT_SHA', 'unknown')
