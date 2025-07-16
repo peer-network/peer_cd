@@ -12,6 +12,7 @@ import sys
 import logging
 import subprocess
 import json
+import glob
 from datetime import datetime
 from pathlib import Path
 
@@ -52,19 +53,19 @@ TARGET_SERVERS = {
 TEST_CONFIGS = {
     'python': {
         'enabled': True,
-        'test_file': 'test_runner.py',
+        'test_file_py': '*.py',
         'command': ['bash', 'test_python.sh'],
         'timeout': 60
     },
     'php': {
         'enabled': True,
-        'test_file': 'test_runner.php',
+        'test_file_php': '*.php',
         'command': ['bash', 'test_php.sh'],
         'timeout': 60
     },
     'bash': {
         'enabled': True,
-        'test_file': 'test_runner.sh',
+        'test_file_sh': '*.sh',
         'command': ['bash', 'test_bash.sh'],
         'timeout': 60
     }
@@ -120,18 +121,24 @@ def run_tests():
             logger.info(f"Skipping {test_type} tests (disabled)")
             continue
             
-        test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
-        
-        if not os.path.exists(test_file):
-            logger.warning(f"Test file not found: {test_file}")
-            test_results[test_type] = {'status': 'skipped', 'reason': 'test file not found'}
+        #test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
+        files_to_test = []
+
+        for root, _, files in os.walk(DEPLOY_DIR):
+            for file in files:
+                if file.endswith(config['extension']):
+                    files_to_test.append(os.path.join(root, file))
+
+        if not files_to_test:
+            logger.warning(f"No {test_type} files found to test.")
+            test_results[test_type] = {'status': 'skipped', 'reason': 'no matching files'}
             continue
-        
-        logger.info(f"Running {test_type} tests...")
         
         try:
             # Change to deploy directory to run tests
             # Set to local testing dir
+            logger.info(f"Running {test_type} test on {len(files_to_test)} files")
+
             result = subprocess.run(
                 config['command'],
                 cwd=LOCAL_TEST_DIR,

@@ -1,3 +1,6 @@
 #!/bin/bash
 
-find "$1" -name "*.py" -exec python3 -m py_compile {} \;
+for file in "$@"; do
+    echo "Checking: $file"
+    python3 -m py_compile "$file" || exit 1
+done

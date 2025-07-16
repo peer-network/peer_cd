@@ -1,3 +1,6 @@
 #!/bin/bash
 
-find "$1" -name "*.sh" -exec bash -n {} \;
+for file in "$@"; do
+    echo "Checking: $file"
+    bash -n "$file" || exit 1
+done

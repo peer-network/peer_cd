@@ -1,3 +1,6 @@
 #!/bin/bash
 
-find "$1" -name "*.php" -exec php -l {} \;
+for file in "$@"; do
+    echo "Checking: $file"
+    php -l "$file" || exit 1
+done
