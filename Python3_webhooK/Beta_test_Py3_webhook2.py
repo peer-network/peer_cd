@@ -36,6 +36,9 @@ TARGET_BRANCH = "refs/heads/dev"
 # Local deployment directory - where we'll keep the synced code
 LOCAL_DEPLOY_DIR = "/opt/application/"
 
+# Local deployment directory - where we'll keep the synced code
+LOCAL_TEST_DIR = "/opt/application/peer_cd_test_deploy"
+
 # Configuration
 LOG_DIR = '/var/log/webhook/'
 PROCESSING_DIR = '/var/log/webhook/events/'
