@@ -153,7 +153,6 @@ def run_tests():
             test_results[test_type] = {'status': 'skipped', 'reason': 'no matching files'}
             continue
         
-        #logger.info(f"Running {test_type} tests...")
         
         try:
             # Change to deploy directory to run tests
