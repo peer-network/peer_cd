@@ -248,7 +248,7 @@ def deploy_locally(source_dir, repo_info):
 
 
 ### If the pull is successful then test and deploy to the target servers
-##  ready for testing  
+##  ready for testing, agian.  
 ##
 def run_post_deployment_script(repo_info):
     """Run the post-deployment script for testing and remote deployment"""
