@@ -138,7 +138,7 @@ def run_tests():
             logger.info(f"Skipping {test_type} tests (disabled)")
             continue
             
-        test_file = os.path.join(DEPLOY_DIR, config['test_file'])
+        test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
         
         if not os.path.exists(test_file):
             logger.warning(f"Test file not found: {test_file}")
