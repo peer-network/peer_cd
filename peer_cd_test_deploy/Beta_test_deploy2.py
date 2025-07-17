@@ -161,7 +161,7 @@ def run_tests():
 
             result = subprocess.run(
                 config['command'],
-                cwd=DEPLOY_DIR,
+                cwd=LOCAL_TEST_DIR,
                 capture_output=True,
                 text=True,
                 timeout=config['timeout']
