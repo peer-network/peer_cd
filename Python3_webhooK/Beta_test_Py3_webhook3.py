@@ -393,7 +393,7 @@ def handle_webhook():
     signature_header = request.headers.get('X-Hub-Signature-256')
     event_type = request.headers.get('X-GitHub-Event')
     
-    logger.info(f"=*= Initiated githut event proccess =*=")
+    logger.info(f"=*= Initiated github event proccess =*=")
     logger.info(f"Received webhook event: {event_type}")
     
     # Verify signature if secret is configured
