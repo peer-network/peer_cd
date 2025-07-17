@@ -367,7 +367,7 @@ def process_deployment(webhook_data):
     return deployment_success
 
 ### webhook proccess
-##  github signature with payload
+##  github signature with payload will parse the directories
 ##
 def verify_signature(payload_body, signature_header, secret):
     """Verify GitHub webhook signature"""
