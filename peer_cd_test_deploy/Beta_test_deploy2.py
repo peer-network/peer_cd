@@ -227,6 +227,7 @@ def deploy_directory_locally(mapping_config, mapping_name):
         return False
     
     # Rsync command for local deployment
+    # the work for copying the files to their desinations
     rsync_cmd = [
         'rsync',
         '-avz',
