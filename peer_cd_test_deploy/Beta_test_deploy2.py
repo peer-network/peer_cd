@@ -6,6 +6,7 @@ Tsting si good for now.
 
 This is the switchboard for DevOps, as the all (most) of the DevOps.
 So this is teh infrastructure for DevOps 
+Added minibot to the list
 """
 
 import os
