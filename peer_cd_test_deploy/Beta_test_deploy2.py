@@ -61,7 +61,7 @@ DEPLOYMENT_MAPPINGS = {
         'description': 'Monitoring stack to monitor server'
     },
     'minibot': {
-        'source_dir': 'minibot',
+        'source_dir': 'mintbot',
         'target_server': 'monitor',
         'target_path': '/home/ubuntu/peer_cd/minibot',
         'user': 'ubuntu',
