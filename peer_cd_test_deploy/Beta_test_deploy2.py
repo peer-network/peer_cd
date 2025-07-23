@@ -16,6 +16,8 @@ import json
 import glob
 from datetime import datetime
 from pathlib import Path
+import shutil
+
 
 ### Get environment variables passed from webhook
 ##  
