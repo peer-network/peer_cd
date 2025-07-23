@@ -57,6 +57,14 @@ DEPLOYMENT_MAPPINGS = {
         'ip': '172.16.0.20',
         'description': 'Monitoring stack to monitor server'
     },
+    'minibot': {
+        'source_dir': 'minibot',
+        'target_server': 'monitor',
+        'target_path': '/home/ubuntu/peer_cd/minibot',
+        'user': 'ubuntu',
+        'ip': '172.16.0.20',
+        'description': 'Monitoring for gem token queries '
+    },
     'php-webhook': {
         'source_dir': 'php-webhook',
         'target_server': 'deploy-server',
