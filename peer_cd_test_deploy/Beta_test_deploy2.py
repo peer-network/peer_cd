@@ -6,7 +6,7 @@ Tsting si good for now.
 
 This is the switchboard for DevOps, as the all (most) of the DevOps.
 So this is teh infrastructure for DevOps 
-Added minibot (mintbot in branch) to the list
+Added (mintbot in branch) to the list
 """
 
 import os
@@ -60,10 +60,10 @@ DEPLOYMENT_MAPPINGS = {
         'ip': '172.16.0.20',
         'description': 'Monitoring stack to monitor server'
     },
-    'minibot': {
+    'mintbot': {
         'source_dir': 'mintbot',
         'target_server': 'monitor',
-        'target_path': '/home/ubuntu/peer_cd/minibot',
+        'target_path': '/home/ubuntu/peer_cd/mintbot',
         'user': 'ubuntu',
         'ip': '172.16.0.20',
         'description': 'Monitoring for gem token queries '
