@@ -414,6 +414,40 @@ def main():
     
     # Final status
     if test_success and deploy_success:
+        logger.info("=== Moving /opt/application/ to ~/myenv/peer_cd/ ===")
+
+        ### set to copy from peer_cd to a backup directory
+        home = str(Path.home())
+        peer_cd_dir = os.path.join(home, "myenv", "peer_cd")
+        backup_dir = peer_cd_dir + "_backup"
+        source_dir = "/opt/application"
+
+        # Step 1: Backup peer_cd directory
+        if os.path.exists(backup_dir):
+            logger.info(f"Removing old backup at {backup_dir}")
+            shutil.rmtree(backup_dir)
+
+        logger.info(f"=== Backing up {peer_cd_dir} to {backup_dir} ===")
+        shutil.copytree(peer_cd_dir, backup_dir)
+
+        # Step 2: Use rsync to copy changes and delete missing files
+        logger.info(f"=== Syncing from {source_dir} to {peer_cd_dir} ===")
+        rsync_command = [
+            "rsync",
+            "-av",               # archive mode, verbose
+            "--delete",          # delete files not in source
+            "--update",          # skip files that are newer in destination
+            source_dir + "/",    # trailing slash to copy contents, not dir
+            peer_cd_dir + "/"
+        ]
+        result = subprocess.run(rsync_command, capture_output=True, text=True)
+
+        # Show output or error
+        if result.returncode == 0:
+            logger.info("=== Local Rsync from /opt/applicaiton completed successfully. ===")
+        else:
+            logger.info(" <<>> Local Rsync failed /opt/application <<>>")
+            
         logger.info("POST-DEPLOYMENT COMPLETED SUCCESSFULLY")
         return 0
     else:
