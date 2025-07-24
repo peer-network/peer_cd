@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ### test push to see deployment.
-### set
+### merge good
 
 
 set -euo pipefail
