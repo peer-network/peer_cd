@@ -42,7 +42,8 @@ DEPLOYMENT_MAPPINGS = {
         'target_path': '~/myenv/peer_cd/Python3_webhook',
         'user': 'ubuntu',
         'ip': None,  # Local deployment
-        'description': 'Python webhook to local server'
+        'description': 'Python webhook to local server',
+        'excludes': []
     },
     'peer_cd_test_deploy': {
         'source_dir': 'peer_cd_test_deploy',
@@ -50,7 +51,8 @@ DEPLOYMENT_MAPPINGS = {
         'target_path': '/opt/application/peer_cd_test_deploy',
         'user': 'ubuntu',
         'ip': None,  # Local deployment
-        'description': 'Test deployment files to local server'
+        'description': 'Test deployment files to local server',
+        'excludes': []
     },
     'monitoring-stack': {
         'source_dir': 'monitoring-stack',
@@ -58,7 +60,8 @@ DEPLOYMENT_MAPPINGS = {
         'target_path': '/home/ubuntu/peer_cd/monitoring-stack',
         'user': 'ubuntu',
         'ip': '172.16.0.20',
-        'description': 'Monitoring stack to monitor server'
+        'description': 'Monitoring stack to monitor server',
+        'excludes': []
     },
     'mintbot': {
         'source_dir': 'mintbot',
@@ -69,8 +72,8 @@ DEPLOYMENT_MAPPINGS = {
         'description': 'Monitoring for gem token queries',
         'excludes': [
             '.env',
-            'secrets/*'
-            'logs/*',
+            'secrets/*',
+            'logs/*'
             ]
     },
     'php-webhook': {
@@ -79,7 +82,8 @@ DEPLOYMENT_MAPPINGS = {
         'target_path': '/home/ubuntu/deploy-scripts',
         'user': 'ubuntu',
         'ip': '172.16.10.194',
-        'description': 'PHP webhook to deploy server'
+        'description': 'PHP webhook to deploy server',
+        'excludes': []
     }
 }
 
@@ -316,7 +320,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
         f'{source_path}/',
         f'{server_user}@{server_ip}:{target_path}/'
     ]
-    
+
     if exclude_dir:
         for pattern in excludes:
             rsync_cmd += ['--exclude', pattern]
