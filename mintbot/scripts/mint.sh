@@ -64,6 +64,8 @@ LOGIN_RES=$(jq -n --arg q "$login_query" '{"query": $q}' | \
        -H "Content-Type: application/json" \
        -d @-)
 
+echo "$LOGIN_RES" > "$LOGDIR/login_response.txt"
+
 accessToken=$(echo "$LOGIN_RES" | jq -r '.data.login.accessToken // empty')
 loginStatus=$(echo "$LOGIN_RES" | jq -r '.data.login.status // empty')
 
