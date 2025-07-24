@@ -1,6 +1,7 @@
 #!/bin/bash
 
-### test push to see deployment, again
+### test push to see deployment.
+### set
 
 
 set -euo pipefail
