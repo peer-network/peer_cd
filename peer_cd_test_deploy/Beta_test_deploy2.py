@@ -69,6 +69,7 @@ DEPLOYMENT_MAPPINGS = {
         'description': 'Monitoring for gem token queries',
         'excludes': [
             '.env',
+            'secrets/*'
             'logs/*',
             ]
     },
