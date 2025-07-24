@@ -66,7 +66,11 @@ DEPLOYMENT_MAPPINGS = {
         'target_path': '/home/ubuntu/peer_cd/mintbot',
         'user': 'ubuntu',
         'ip': '172.16.0.20',
-        'description': 'Monitoring for gem token queries '
+        'description': 'Monitoring for gem token queries',
+        'excludes': [
+            '.env',
+            'logs/*',
+            ]
     },
     'php-webhook': {
         'source_dir': 'php-webhook',
@@ -311,6 +315,10 @@ def deploy_directory_remotely(mapping_config, mapping_name):
         f'{server_user}@{server_ip}:{target_path}/'
     ]
     
+    if excludes:
+        for pattern in excludes:
+            rsync_cmd += ['--exclude', pattern]
+
     try:
         result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=300)
         
