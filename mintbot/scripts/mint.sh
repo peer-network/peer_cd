@@ -59,7 +59,7 @@ mutation {
 EOF
 )
 
-LOGIN_RES=$(jq -n --arg query "$login_query" '{query: $query}' | \
+LOGIN_RES=$(jq -n --arg q "$login_query" '{query: $q}' | \
   curl -s -X POST "$endpoint" \
        -H "Content-Type: application/json" \
        -d @-)
@@ -88,8 +88,10 @@ run_query() {
     mkdir -p "$DIR"
     echo "$query" > "$DIR/request.txt"
 
-    RESPONSE=$(curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" \
-        -d "{\"query\":\"$query\"}")
+    RESPONSE=$(jq -n --arg q "$query" '{query: $q}' | \
+      curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" \
+           -d @-)
+
     echo "$RESPONSE" > "$DIR/response.txt"
 
     STATUS=$(echo "$RESPONSE" | jq -r ".data.$name.status // empty")
@@ -116,9 +118,9 @@ DIR="$LOGDIR/$name"
 mkdir -p "$DIR"
 echo "$query" > "$DIR/request.txt"
 
-RESPONSE=$(curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" \
-    -d "{\"query\":\"$query\"}")
-echo "$RESPONSE" > "$DIR/response.txt"
+RESPONSE=$(jq -n --arg q "$query" '{query: $q}' | \
+  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" \
+       -d @-)
 
 STATUS=$(echo "$RESPONSE" | jq -r ".data.$name.status // empty")
 
