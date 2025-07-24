@@ -322,7 +322,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     ]
 
     if exclude_dir:
-        for pattern in excludes:
+        for pattern in exclude_dir:
             rsync_cmd += ['--exclude', pattern]
 
     logger.info(f"rsync command {rsync_cmd}")
