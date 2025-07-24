@@ -59,11 +59,9 @@ mutation {
 EOF
 )
 
-LOGIN_RES=$(jq -n --arg q "$login_query" '{"query": $q}' | \
-  curl -s -X POST "$endpoint" \
-       -H "Content-Type: application/json" \
-       -H "Content-Type: application/json" \
-       -d @-)
+LOGIN_RES=$(curl -s -X POST "$endpoint" \
+  -H "Content-Type: application/json" \
+  -d "{\"query\": \"$login_query\"}")
 
 echo "$LOGIN_RES" > "$LOGDIR/login_response.txt"
 
