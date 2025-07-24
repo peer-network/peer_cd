@@ -6,7 +6,7 @@ Tsting si good for now.
 
 This is the switchboard for DevOps, as the all (most) of the DevOps.
 So this is teh infrastructure for DevOps 
-Added (mintbot in branch) to the list added exclutions to mintbot rsync.
+Added (mintbot in branch) to the list added exclutions to mintbot rsync
 """
 
 import os
@@ -279,6 +279,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     target_path = mapping_config['target_path']
     server_ip = mapping_config['ip']
     server_user = mapping_config['user']
+    exclude_dir = mapping_config['excludes']
     
     logger.info(f"Deploying {mapping_name} to {server_ip}: {source_path} -> {target_path}")
     
@@ -316,7 +317,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
         f'{server_user}@{server_ip}:{target_path}/'
     ]
     
-    if excludes:
+    if exclude_dir:
         for pattern in excludes:
             rsync_cmd += ['--exclude', pattern]
 
