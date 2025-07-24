@@ -320,6 +320,8 @@ def deploy_directory_remotely(mapping_config, mapping_name):
         for pattern in excludes:
             rsync_cmd += ['--exclude', pattern]
 
+    logger.info(f"rsync command {rsync_cmd}")
+
     try:
         result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=300)
         
