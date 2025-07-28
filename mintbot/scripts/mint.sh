@@ -16,10 +16,46 @@ LOGFILE="$LOGDIR/log_file.txt"
 
 # Telegram functions
 notify_error() {
+    # Response files
+    local login_res="$LOGDIR/login_response.txt"
+    local globalwins_res="$LOGDIR/globalwins/response.txt"
+    local gemster_res="$LOGDIR/gemster/response.txt"
+    local gemsters_res="$LOGDIR/gemsters/response.txt"
+
+    # Preview first 500 chars of each
+    local login_preview=$(head -c 500 "$login_res" 2>/dev/null)
+    local globalwins_preview=$(head -c 500 "$globalwins_res" 2>/dev/null)
+    local gemster_preview=$(head -c 500 "$gemster_res" 2>/dev/null)
+    local gemsters_preview=$(head -c 500 "$gemsters_res" 2>/dev/null)
+
+    local msg="*Minting Failed* on \`$endpoint\`
+
+*Login Response:*
+\`\`\`
+$login_preview
+\`\`\`
+
+*globalwins Response:*
+\`\`\`
+$globalwins_preview
+\`\`\`
+
+*gemster Response:*
+\`\`\`
+$gemster_preview
+\`\`\`
+
+*gemsters Response:*
+\`\`\`
+$gemsters_preview
+\`\`\`
+
+See full logs: \`$LOGDIR\`"
+
     curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendMessage" \
         -d chat_id="$TG_chat_id" \
         -d parse_mode="Markdown" \
-        -d text="*Failed to mint* on \`$endpoint\`\nSee logs: \`$LOGDIR\`"
+        --data-urlencode "text=$msg"
 }
 
 notify_success() {
@@ -28,6 +64,27 @@ notify_success() {
         -d parse_mode="Markdown" \
         -d disable_notification=true \
         -d text="*Successfully minted* on \`$endpoint\`"
+}
+
+notify_warning() {
+    local name="$1"
+
+    local res_path="$LOGDIR/$name/response.txt"
+    local preview=$(head -c 500 "$res_path" 2>/dev/null)
+
+    local msg="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`
+
+*Response:*
+\`\`\`
+$preview
+\`\`\`
+
+See full logs: \`$LOGDIR\`"
+
+    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendMessage" \
+        -d chat_id="$TG_chat_id" \
+        -d parse_mode="Markdown" \
+        --data-urlencode "text=$msg"
 }
 
 log_info() {
@@ -106,11 +163,39 @@ run_query() {
 }
 
 # Run all 3 minting-related queries
-run_query "globalwins" "query { globalwins { status ResponseCode } }"
+# Run globalwins with custom check
+name="globalwins"
+query="query { globalwins { status ResponseCode } }"
+DIR="$LOGDIR/$name"
+
+mkdir -p "$DIR"
+echo "$query" > "$DIR/request.txt"
+
+RESPONSE=$(jq -n --arg q "$query" '{query: $q}' | \
+  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" -d @-)
+
+echo "$RESPONSE" > "$DIR/response.txt"
+
+STATUS=$(echo "$RESPONSE" | jq -r ".data.$name.status // empty")
+RESPONSE_CODE=$(echo "$RESPONSE" | jq -r ".data.$name.ResponseCode // empty")
+
+if [[ "$STATUS" == "success" ]]; then
+    if [[ "$RESPONSE_CODE" =~ ^2 ]]; then
+        log_info "$name: success but no activity (ResponseCode $RESPONSE_CODE)"
+        notify_warning "$name"
+    else
+        log_info "$name: success"
+    fi
+else
+    log_error "$name: failed"
+    notify_error
+    exit 1
+fi
 
 run_query "gemster" "query { gemster { status ResponseCode affectedRows { d0 d1 d2 d3 d4 d5 w0 m0 y0 } } }"
 
 # Final query with custom handling
+# Final query: gemsters with custom check
 name="gemsters"
 query="query { gemsters(day: D1) { status counter ResponseCode affectedRows { winStatus { totalGems gemsintoken bestatigung } userStatus { userid gems tokens percentage details { gemid userid postid fromid gems numbers whereby createdat } } } } }"
 DIR="$LOGDIR/$name"
@@ -119,14 +204,21 @@ mkdir -p "$DIR"
 echo "$query" > "$DIR/request.txt"
 
 RESPONSE=$(jq -n --arg q "$query" '{query: $q}' | \
-  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" \
-       -d @-)
+  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" -d @-)
+
+echo "$RESPONSE" > "$DIR/response.txt"
 
 STATUS=$(echo "$RESPONSE" | jq -r ".data.$name.status // empty")
+RESPONSE_CODE=$(echo "$RESPONSE" | jq -r ".data.$name.ResponseCode // empty")
 
 if [[ "$STATUS" == "success" ]]; then
-    log_info "$name: success"
-    notify_success
+    if [[ "$RESPONSE_CODE" =~ ^2 ]]; then
+        log_info "$name: success but no activity (ResponseCode $RESPONSE_CODE)"
+        notify_warning "$name"
+    else
+        log_info "$name: success"
+        notify_success
+    fi
 else
     log_error "$name: failed"
     notify_error
