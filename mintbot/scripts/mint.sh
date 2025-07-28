@@ -201,6 +201,9 @@ else
     exit 1
 fi
 
+log_info "All queries completed. Warnings: ${warnings[*]}"
 if [[ "${#warnings[@]}" -gt 0 ]]; then
     notify_warning "${warnings[-1]}"
+else
+    notify_success
 fi
