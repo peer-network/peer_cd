@@ -20,11 +20,10 @@ warnings=()
 notify_error() {
     # Zip all response files
     zip_path="$LOGDIR/mintbot_responses_$TS.zip"
-    zip -j "$zip_path" "$LOGDIR/login_response.txt" \
-                   "$LOGDIR/globalwins/response.txt" \
-                   "$LOGDIR/gemster/response.txt" \
-                   "$LOGDIR/gemsters/response.txt" >/dev/null
-
+    zip -r "$zip_path" "$LOGDIR/login_response.txt" \
+                "$LOGDIR/globalwins/response.txt" \
+                "$LOGDIR/gemster/response.txt" \
+                "$LOGDIR/gemsters/response.txt" >/dev/null
     # Message caption
     caption="*Minting Failed* on \`$endpoint\`\n\nSee attached zip for full responses.\nLog folder: \`$LOGDIR\`"
 
@@ -48,11 +47,22 @@ notify_warning() {
     local name="$1"
     local zip_path="$LOGDIR/warning_all_responses_$TS.zip"
 
-    # Create zip and fail early if something is missing
-    if ! zip -j "$zip_path" "$LOGDIR/login_response.txt" \
-                         "$LOGDIR/globalwins/response.txt" \
-                         "$LOGDIR/gemster/response.txt" \
-                         "$LOGDIR/gemsters/response.txt" >/dev/null; then
+    # Check all expected files exist before attempting to zip
+    for file in "$LOGDIR/login_response.txt" \
+                "$LOGDIR/globalwins/response.txt" \
+                "$LOGDIR/gemster/response.txt" \
+                "$LOGDIR/gemsters/response.txt"; do
+        if [[ ! -f "$file" ]]; then
+            log_error "Missing file for warning zip: $file"
+            return
+        fi
+    done
+
+    # Create zip (no -j to preserve folder structure)
+    if ! zip -r "$zip_path" "$LOGDIR/login_response.txt" \
+                          "$LOGDIR/globalwins/response.txt" \
+                          "$LOGDIR/gemster/response.txt" \
+                          "$LOGDIR/gemsters/response.txt" >/dev/null; then
         log_error "Failed to create zip file for warnings. Skipping Telegram warning notification."
         return
     fi
