@@ -14,6 +14,8 @@ TS=$(date +"%Y%m%d%H%M%S")
 LOGDIR="$path_to_logs_root_dir/mint_$TS"
 LOGFILE="$LOGDIR/log_file.txt"
 
+warnings=()
+
 # Telegram functions
 notify_error() {
     # Zip all response files
@@ -44,15 +46,15 @@ notify_success() {
 
 notify_warning() {
     local name="$1"
+    local zip_path="$LOGDIR/warning_all_responses_$TS.zip"
 
-    # Zip all response files (not just one)
-    local zip_path="$LOGDIR/warning_all_${name}_$TS.zip"
+    # Zip all 4 response files
     zip -j "$zip_path" "$LOGDIR/login_response.txt" \
                      "$LOGDIR/globalwins/response.txt" \
                      "$LOGDIR/gemster/response.txt" \
                      "$LOGDIR/gemsters/response.txt" >/dev/null
 
-    local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached zip with full responses.\nLog folder: \`$LOGDIR\`"
+    local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached zip with all responses.\nLog folder: \`$LOGDIR\`"
 
     curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
         -F chat_id="$TG_chat_id" \
@@ -156,7 +158,7 @@ RESPONSE_CODE=$(echo "$RESPONSE" | jq -r ".data.$name.ResponseCode // empty")
 if [[ "$STATUS" == "success" ]]; then
     if [[ "$RESPONSE_CODE" =~ ^2 ]]; then
         log_info "$name: success but no activity (ResponseCode $RESPONSE_CODE)"
-        notify_warning "$name"
+        warnings+=("$name")
     else
         log_info "$name: success"
     fi
@@ -188,7 +190,7 @@ RESPONSE_CODE=$(echo "$RESPONSE" | jq -r ".data.$name.ResponseCode // empty")
 if [[ "$STATUS" == "success" ]]; then
     if [[ "$RESPONSE_CODE" =~ ^2 ]]; then
         log_info "$name: success but no activity (ResponseCode $RESPONSE_CODE)"
-        notify_warning "$name"
+        warnings+=("$name")
     else
         log_info "$name: success"
         notify_success
@@ -197,4 +199,8 @@ else
     log_error "$name: failed"
     notify_error
     exit 1
+fi
+
+if [[ "${#warnings[@]}" -gt 0 ]]; then
+    notify_warning "${warnings[-1]}"
 fi
