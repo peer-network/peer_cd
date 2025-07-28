@@ -48,13 +48,18 @@ notify_warning() {
     local name="$1"
     local zip_path="$LOGDIR/warning_all_responses_$TS.zip"
 
-    # Zip all 4 response files
-    zip -j "$zip_path" "$LOGDIR/login_response.txt" \
-                     "$LOGDIR/globalwins/response.txt" \
-                     "$LOGDIR/gemster/response.txt" \
-                     "$LOGDIR/gemsters/response.txt" >/dev/null
+    # Create zip and fail early if something is missing
+    if ! zip -j "$zip_path" "$LOGDIR/login_response.txt" \
+                         "$LOGDIR/globalwins/response.txt" \
+                         "$LOGDIR/gemster/response.txt" \
+                         "$LOGDIR/gemsters/response.txt" >/dev/null; then
+        log_error "Failed to create zip file for warnings. Skipping Telegram warning notification."
+        return
+    fi
 
     local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached zip with all responses.\nLog folder: \`$LOGDIR\`"
+
+    log_info "Sending warning notification zip to Telegram..."
 
     curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
         -F chat_id="$TG_chat_id" \
