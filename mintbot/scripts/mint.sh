@@ -44,13 +44,15 @@ notify_success() {
 
 notify_warning() {
     local name="$1"
-    local res_path="$LOGDIR/$name/response.txt"
-    local zip_path="$LOGDIR/warning_${name}_$TS.zip"
 
-    # Create zip with full response
-    zip -j "$zip_path" "$res_path" >/dev/null
+    # Zip all response files (not just one)
+    local zip_path="$LOGDIR/warning_all_${name}_$TS.zip"
+    zip -j "$zip_path" "$LOGDIR/login_response.txt" \
+                     "$LOGDIR/globalwins/response.txt" \
+                     "$LOGDIR/gemster/response.txt" \
+                     "$LOGDIR/gemsters/response.txt" >/dev/null
 
-    local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached response file.\nLog folder: \`$LOGDIR\`"
+    local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached zip with full responses.\nLog folder: \`$LOGDIR\`"
 
     curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
         -F chat_id="$TG_chat_id" \
