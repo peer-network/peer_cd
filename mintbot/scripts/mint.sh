@@ -16,46 +16,22 @@ LOGFILE="$LOGDIR/log_file.txt"
 
 # Telegram functions
 notify_error() {
-    # Response files
-    local login_res="$LOGDIR/login_response.txt"
-    local globalwins_res="$LOGDIR/globalwins/response.txt"
-    local gemster_res="$LOGDIR/gemster/response.txt"
-    local gemsters_res="$LOGDIR/gemsters/response.txt"
+    # Zip all response files
+    zip_path="$LOGDIR/mintbot_responses_$TS.zip"
+    zip -j "$zip_path" "$LOGDIR/login_response.txt" \
+                   "$LOGDIR/globalwins/response.txt" \
+                   "$LOGDIR/gemster/response.txt" \
+                   "$LOGDIR/gemsters/response.txt" >/dev/null
 
-    # Preview first 500 chars of each
-    local login_preview=$(head -c 500 "$login_res" 2>/dev/null)
-    local globalwins_preview=$(head -c 500 "$globalwins_res" 2>/dev/null)
-    local gemster_preview=$(head -c 500 "$gemster_res" 2>/dev/null)
-    local gemsters_preview=$(head -c 500 "$gemsters_res" 2>/dev/null)
+    # Message caption
+    caption="*Minting Failed* on \`$endpoint\`\n\nSee attached zip for full responses.\nLog folder: \`$LOGDIR\`"
 
-    local msg="*Minting Failed* on \`$endpoint\`
-
-*Login Response:*
-\`\`\`
-$login_preview
-\`\`\`
-
-*globalwins Response:*
-\`\`\`
-$globalwins_preview
-\`\`\`
-
-*gemster Response:*
-\`\`\`
-$gemster_preview
-\`\`\`
-
-*gemsters Response:*
-\`\`\`
-$gemsters_preview
-\`\`\`
-
-See full logs: \`$LOGDIR\`"
-
-    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendMessage" \
-        -d chat_id="$TG_chat_id" \
-        -d parse_mode="Markdown" \
-        --data-urlencode "text=$msg"
+    # Send document to Telegram
+    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
+        -F chat_id="$TG_chat_id" \
+        -F caption="$caption" \
+        -F parse_mode="Markdown" \
+        -F document=@"$zip_path"
 }
 
 notify_success() {
@@ -68,23 +44,19 @@ notify_success() {
 
 notify_warning() {
     local name="$1"
-
     local res_path="$LOGDIR/$name/response.txt"
-    local preview=$(head -c 500 "$res_path" 2>/dev/null)
+    local zip_path="$LOGDIR/warning_${name}_$TS.zip"
 
-    local msg="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`
+    # Create zip with full response
+    zip -j "$zip_path" "$res_path" >/dev/null
 
-*Response:*
-\`\`\`
-$preview
-\`\`\`
+    local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached response file.\nLog folder: \`$LOGDIR\`"
 
-See full logs: \`$LOGDIR\`"
-
-    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendMessage" \
-        -d chat_id="$TG_chat_id" \
-        -d parse_mode="Markdown" \
-        --data-urlencode "text=$msg"
+    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
+        -F chat_id="$TG_chat_id" \
+        -F caption="$caption" \
+        -F parse_mode="Markdown" \
+        -F document=@"$zip_path"
 }
 
 log_info() {
