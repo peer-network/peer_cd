@@ -14,12 +14,25 @@ TS=$(date +"%Y%m%d%H%M%S")
 LOGDIR="$path_to_logs_root_dir/mint_$TS"
 LOGFILE="$LOGDIR/log_file.txt"
 
+warnings=()
+
 # Telegram functions
 notify_error() {
-    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendMessage" \
-        -d chat_id="$TG_chat_id" \
-        -d parse_mode="Markdown" \
-        -d text="*Failed to mint* on \`$endpoint\`\nSee logs: \`$LOGDIR\`"
+    # Zip all response files
+    zip_path="$LOGDIR/mintbot_responses_$TS.zip"
+    zip -r "$zip_path" "$LOGDIR/login_response.txt" \
+                "$LOGDIR/globalwins/response.txt" \
+                "$LOGDIR/gemster/response.txt" \
+                "$LOGDIR/gemsters/response.txt" >/dev/null
+    # Message caption
+    caption="*Minting Failed* on \`$endpoint\`\n\nSee attached zip for full responses.\nLog folder: \`$LOGDIR\`"
+
+    # Send document to Telegram
+    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
+        -F chat_id="$TG_chat_id" \
+        -F caption="$caption" \
+        -F parse_mode="Markdown" \
+        -F document=@"$zip_path"
 }
 
 notify_success() {
@@ -28,6 +41,41 @@ notify_success() {
         -d parse_mode="Markdown" \
         -d disable_notification=true \
         -d text="*Successfully minted* on \`$endpoint\`"
+}
+
+notify_warning() {
+    local name="$1"
+    local zip_path="$LOGDIR/warning_all_responses_$TS.zip"
+
+    # Check all expected files exist before attempting to zip
+    for file in "$LOGDIR/login_response.txt" \
+                "$LOGDIR/globalwins/response.txt" \
+                "$LOGDIR/gemster/response.txt" \
+                "$LOGDIR/gemsters/response.txt"; do
+        if [[ ! -f "$file" ]]; then
+            log_error "Missing file for warning zip: $file"
+            return
+        fi
+    done
+
+    # Create zip (no -j to preserve folder structure)
+    if ! zip -r "$zip_path" "$LOGDIR/login_response.txt" \
+                          "$LOGDIR/globalwins/response.txt" \
+                          "$LOGDIR/gemster/response.txt" \
+                          "$LOGDIR/gemsters/response.txt" >/dev/null; then
+        log_error "Failed to create zip file for warnings. Skipping Telegram warning notification."
+        return
+    fi
+
+    local caption="*Warning*: \`$name\` returned success but no activity on \`$endpoint\`\n\nSee attached zip with all responses.\nLog folder: \`$LOGDIR\`"
+
+    log_info "Sending warning notification zip to Telegram..."
+
+    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
+        -F chat_id="$TG_chat_id" \
+        -F caption="$caption" \
+        -F parse_mode="Markdown" \
+        -F document=@"$zip_path"
 }
 
 log_info() {
@@ -106,11 +154,39 @@ run_query() {
 }
 
 # Run all 3 minting-related queries
-run_query "globalwins" "query { globalwins { status ResponseCode } }"
+# Run globalwins with custom check
+name="globalwins"
+query="query { globalwins { status ResponseCode } }"
+DIR="$LOGDIR/$name"
+
+mkdir -p "$DIR"
+echo "$query" > "$DIR/request.txt"
+
+RESPONSE=$(jq -n --arg q "$query" '{query: $q}' | \
+  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" -d @-)
+
+echo "$RESPONSE" > "$DIR/response.txt"
+
+STATUS=$(echo "$RESPONSE" | jq -r ".data.$name.status // empty")
+RESPONSE_CODE=$(echo "$RESPONSE" | jq -r ".data.$name.ResponseCode // empty")
+
+if [[ "$STATUS" == "success" ]]; then
+    if [[ "$RESPONSE_CODE" =~ ^2 ]]; then
+        log_info "$name: success but no activity (ResponseCode $RESPONSE_CODE)"
+        warnings+=("$name")
+    else
+        log_info "$name: success"
+    fi
+else
+    log_error "$name: failed"
+    notify_error
+    exit 1
+fi
 
 run_query "gemster" "query { gemster { status ResponseCode affectedRows { d0 d1 d2 d3 d4 d5 w0 m0 y0 } } }"
 
 # Final query with custom handling
+# Final query: gemsters with custom check
 name="gemsters"
 query="query { gemsters(day: D1) { status counter ResponseCode affectedRows { winStatus { totalGems gemsintoken bestatigung } userStatus { userid gems tokens percentage details { gemid userid postid fromid gems numbers whereby createdat } } } } }"
 DIR="$LOGDIR/$name"
@@ -119,16 +195,30 @@ mkdir -p "$DIR"
 echo "$query" > "$DIR/request.txt"
 
 RESPONSE=$(jq -n --arg q "$query" '{query: $q}' | \
-  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" \
-       -d @-)
+  curl -s -X POST "$endpoint" -H "Content-Type: application/json" -H "$AUTH_HEADER" -d @-)
+
+echo "$RESPONSE" > "$DIR/response.txt"
 
 STATUS=$(echo "$RESPONSE" | jq -r ".data.$name.status // empty")
+RESPONSE_CODE=$(echo "$RESPONSE" | jq -r ".data.$name.ResponseCode // empty")
 
 if [[ "$STATUS" == "success" ]]; then
-    log_info "$name: success"
-    notify_success
+    if [[ "$RESPONSE_CODE" =~ ^2 ]]; then
+        log_info "$name: success but no activity (ResponseCode $RESPONSE_CODE)"
+        warnings+=("$name")
+    else
+        log_info "$name: success"
+        notify_success
+    fi
 else
     log_error "$name: failed"
     notify_error
     exit 1
+fi
+
+log_info "All queries completed. Warnings: ${warnings[*]}"
+if [[ "${#warnings[@]}" -gt 0 ]]; then
+    notify_warning "${warnings[-1]}"
+else
+    notify_success
 fi
