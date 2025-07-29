@@ -84,3 +84,81 @@ The /opt/application/ directory
 
 There is are ssh-keys to allow the transfer to the update to the remote servers. rsync-key  
 This key will only push github changes to the needed places. 
+
+
+```
+# Directory-specific deployment configuration
+DEPLOYMENT_MAPPINGS = {
+    'Python3_webhook': {
+        'source_dir': 'Python3_webhook',
+        'target_server': 'local',
+        'target_path': '~/myenv/peer_cd/Python3_webhook',
+        'user': 'ubuntu',
+        'ip': None,  # Local deployment
+        'description': 'Python webhook to local server',
+        'excludes': []
+    },
+    'peer_cd_test_deploy': {
+        'source_dir': 'peer_cd_test_deploy',
+        'target_server': 'local',
+        'target_path': '/opt/application/peer_cd_test_deploy',
+        'user': 'ubuntu',
+        'ip': None,  # Local deployment
+        'description': 'Test deployment files to local server',
+        'excludes': []
+    },
+    'monitoring-stack': {
+        'source_dir': 'monitoring-stack',
+        'target_server': 'monitor',
+        'target_path': '/home/ubuntu/peer_cd/monitoring-stack',
+        'user': 'ubuntu',
+        'ip': '172.16.0.20',
+        'description': 'Monitoring stack to monitor server',
+        'excludes': []
+    },
+    'mintbot': {
+        'source_dir': 'mintbot',
+        'target_server': 'monitor',
+        'target_path': '/home/ubuntu/peer_cd/mintbot',
+        'user': 'ubuntu',
+        'ip': '172.16.0.20',
+        'description': 'Monitoring for gem token queries',
+        'excludes': [
+            '.env',
+            'secrets/*',
+            'logs/*'
+            ]
+    },
+    'php-webhook': {
+        'source_dir': 'php-webhook',
+        'target_server': 'deploy-server',
+        'target_path': '/home/ubuntu/deploy-scripts',
+        'user': 'ubuntu',
+        'ip': '172.16.10.194',
+        'description': 'PHP webhook to deploy server',
+        'excludes': []
+    }
+}
+
+# Test configuration (unchanged)
+TEST_CONFIGS = {
+    'python': {
+        'enabled': True,
+        'extension': '.py',
+        'command': ['bash', 'test_python.sh'],
+        'timeout': 60
+    },
+    'php': {
+        'enabled': True,
+        'extension': '.php',
+        'command': ['bash', 'test_php.sh'],
+        'timeout': 60
+    },
+    'bash': {
+        'enabled': True,
+        'extension': '.sh',
+        'command': ['bash', 'test_bash.sh'],
+        'timeout': 60
+    }
+}
+```
