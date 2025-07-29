@@ -17,7 +17,7 @@ ls -1dt "$LOG_DIR"/* 2>/dev/null | tail -n +101 | xargs -d '\n' rm -rf --
 if [ -f "$EVENT_LOG" ]; then
     size=$(stat -c%s "$EVENT_LOG")
     if [ "$size" -gt "$MAX_SIZE" ]; then
-        echo "[$(date)] Trimming $EVENT_LOG (size=$size)"
+        echo "[$(date)] Trimming $EVENT_LOG (size=$size)" >> /home/ubuntu/peer_cd/mintbot/logs/mintbot-cleanup.log
         # Keep last 1000 lines (adjust if needed)
         tail -n 1000 "$EVENT_LOG" > "${EVENT_LOG}.tmp" && mv "${EVENT_LOG}.tmp" "$EVENT_LOG"
     fi
