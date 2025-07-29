@@ -36,11 +36,35 @@ notify_error() {
 }
 
 notify_success() {
-    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendMessage" \
-        -d chat_id="$TG_chat_id" \
-        -d parse_mode="Markdown" \
-        -d disable_notification=true \
-        -d text="*Successfully minted* on \`$endpoint\`"
+    local zip_path="$LOGDIR/success_all_responses_$TS.zip"
+
+    # Check all expected files exist
+    for file in "$LOGDIR/login_response.txt" \
+                "$LOGDIR/globalwins/response.txt" \
+                "$LOGDIR/gemster/response.txt" \
+                "$LOGDIR/gemsters/response.txt"; do
+        if [[ ! -f "$file" ]]; then
+            log_error "Missing file for success zip: $file"
+            return
+        fi
+    done
+
+    # Create zip
+    if ! zip -r "$zip_path" "$LOGDIR/login_response.txt" \
+                            "$LOGDIR/globalwins/response.txt" \
+                            "$LOGDIR/gemster/response.txt" \
+                            "$LOGDIR/gemsters/response.txt" >/dev/null; then
+        log_error "Failed to create zip file for success notification."
+        return
+    fi
+
+    local caption="✅ *Successfully minted* on \`$endpoint\`\n\nSee attached zip for responses.\nLog folder: \`$LOGDIR\`"
+
+    curl -s -X POST "https://api.telegram.org/bot$TG_bot_API_key/sendDocument" \
+        -F chat_id="$TG_chat_id" \
+        -F caption="$caption" \
+        -F parse_mode="Markdown" \
+        -F document=@"$zip_path"
 }
 
 notify_warning() {
@@ -208,7 +232,6 @@ if [[ "$STATUS" == "success" ]]; then
         warnings+=("$name")
     else
         log_info "$name: success"
-        notify_success
     fi
 else
     log_error "$name: failed"
