@@ -2,58 +2,56 @@
 This is the repository of Peer Networks Continuos Deployment (CD) Code.  
 
 
-# Continuos Deployment
+# Welcome to Continuous Deployment (CD) Wiki for **Peer Network** 
 
-## This repo is to track files and changes in Peers' Continuos Deployment.
+### This page serves as the single orientation/explainer point for DevOps and Administrators for Peer.
 
 ---
 
-## PHP Webhook
-### peer_backend
-Set to catch the PHP API to start a build.
+## 🚀 What is Peer Network?
 
-There are 3 files that are needed
-* peer-deploy-hok.php
-* deploy-backend.sh
-* payload.json
-  * for testing
+Peer Network is a blockchain-integrated social network where users post content, earn tokens, Chat, and importantly (Monetize Participation).
 
-There is a test curl command that can run this deploy script as a test.
+---
 
+## 🧱 Architecture Overview
+
+The system is made up of multiple coordinated repositories:
+
+| Component | Description |
+|----------|-------------|
+| [`peer_backend`](https://github.com/peer-network/peer_backend) | Main GraphQL API: users, content, chat, wallet, moderation |
+| [`peer_backend_CI/CD`](https://github.com/peer-network/peer_backend_ci-cd) | Main DevOps repository |
+| [`peer_cd`](https://github.com/peer-network/peer_cd) | This repo |
+
+Each client connects to the backend via GraphQL, and the backend handles blockchain interaction and rewards.
+
+## Peer CD
+
+### Please read the wiki for more information implimenting new code to this repo.
+
+This repo is to facilitate automatic updates to the other back-end servers from DevOps.  This allows DevOps to push to this repo and have those changes apply to the **testing** environment of Peer.  There is a webhook monitoring this repo for any pushs to `dev` branch. The `main` branch pushes to **production** (when verified). 
+
+The setup of the repo is part of how the webhook work and the placement of the scrips from DevOps.  
+
+Each directory has a point where the code is copied (`rsync`) remotely or locally. 
+
+## Format of Peer CD
+
+As of 04.08.2025
+The directory structure is:
+
+```.
+├── mintbot
+│   ├── scripts
+│   └── secrets
+├── monitoring-stack
+│   ├── postman_collection
+│   └── scripts
+├── peer_cd_test_deploy
+├── php-webhook
+└── Python3_webhooK
 ```
-curl -X POST https://peer-network.eu/deploy-hook -H "Content-Type: application/json"   -H "X-Hub-Signature-256: sha256=$SIGNATURE" --data-binary @payload.json
-```
-
-## Monitor database
-### peer_monitor
-
-New server added to the beta-testing group.
-It is running a script to test the prod database or "The Feed" of Peer.
-if there is any thing wrong with the database, an alert is send to Telegram
-An example
-
-![image](https://github.com/user-attachments/assets/3ce8670f-7e94-4936-b634-0cc304cb5f35)
-
-
-There is a cron job that runs the monitor every 3 minutes.
-
-```
-*/3 *   * * *   root    bash /home/ubuntu/peer_cd/monitoring-stack/scripts/monitor-api-py.sh >> /var/log/postman_logs/cron.log 2>&1
-```
-
-## GitHub Push to server
-### to have a Github push to propigate to the CD servers to update the code when needed.
-
-To have pushes to this repo to be be 'pushed' to the repected servers.
-This CD will be split between
-* Main
-  * This brach will push changes for monitoring Prod systems
-* Dev
-  * This brach will push to the testing envirnment
-
-DevOps then can push to Dev easily and can test there changes.  When all parties are happy then a merge to Main and push to effect Prod.
-
-The /opt/application/ directory
 
 ```
 .
