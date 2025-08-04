@@ -52,7 +52,7 @@
                                         }
                                 },
                                 "url": {
-                                        "raw": "https://peer-network.eu/graphql",
+                                        "raw": "https://peernetwork.eu/graphql",
                                         "protocol": "https",
                                         "host": [
                                                 "peernetwork",
@@ -106,7 +106,7 @@
                                         }
                                 },
                                 "url": {
-                                        "raw": "https://peer-network.eu/graphql",
+                                        "raw": "https://peernetwork.eu/graphql",
                                         "protocol": "https",
                                         "host": [
                                                 "peernetwork",
@@ -160,7 +160,7 @@
                                         }
                                 },
                                 "url": {
-                                        "raw": "https://peer-network.eu/graphql",
+                                        "raw": "https://peernetwork.eu/graphql",
                                         "protocol": "https",
                                         "host": [
                                                 "peernetwork",

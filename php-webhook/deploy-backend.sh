@@ -31,7 +31,7 @@ rm -rf /var/www/peer_beta/peer_backend/src/
 rm -rf /var/www/peer_beta/peer_backend/vendor/
 rm -rf /var/www/peer_beta/peer_backend/public/
 rm -f /var/www/peer_beta/peer_backend/.env.schema
-rm -f /var/www/peer_beta/peer_backend/composer.json composer.lock
+rm -f /var/www/peer_beta/peer_backend/composer.json  /var/www/peer_beta/peer_backend/composer.lock
 rm -rf /var/www/peer_beta/peer_backend/sql_files_for_import/
 rm -rf /var/www/peer_beta/peer_backend/runtime-data/media/assets/
 rm -f /var/www/peer_beta/peer_backend/cd-generate-backend-config.sh

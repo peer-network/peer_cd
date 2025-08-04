@@ -53,20 +53,110 @@ The directory structure is:
 └── Python3_webhooK
 ```
 
-### The current main projects are 
-| Project | Description |
-|----------|-------------|
-|- `mintbot` | Mining token system check runs once a day at 10:00 CET |
-|- `monitor-stack` | Postman check for the backend updates |
-|- `php_webhook` | PHP Datebase monitor |
-|- `Python3_webhook` & `peer_cd_test_deploy`| This is the deployment code for Peer CD |
+```
+.
+├── LICENSE
+├── Python3_webhooK           (main webhook for the infrasctuture)
+│   ├── Beta_test_Py3_webhook.py
+│   └── Beta_test_Py3_webhook2.py  (current)
+├── README.md
+├── monitoring-stack    (DevOps monitoring)
+│   ├── postman_collection
+│   │   ├── postman_collections.json
+│   │   └── postman_environment.json
+│   └── scripts
+│       ├── monitor_api.sh
+│       └── monitor_api_py.ph
+├── payload.json              (test .json)
+├── peer_cd_test_deploy       (Where the test and deploy scripts are located)
+│   ├── Beta_test_deploy.py   (Called from Python3_webhook2.py)
+│   ├── test_bash.sh
+│   ├── test_php.sh
+│   └── test_python.sh
+├── php-webhook               (update the backend)
+│   ├── deploy-backend.sh
+│   └── peer-deploy-hook.php
+├── restart-php.sh
+└── update-database.sh
+```
 
-The current main projects are
-Project 	Description
-- mintbot 	Mining token system check runs once a day at 10:00 CET
-- monitor-stack 	Postman check for the backend updates
-- php_webhook 	PHP Datebase monitor
-- Python3_webhook & peer_cd_test_deploy 	This is the deployment code for Peer CD
-Python3_webhook & peer_cd_test_deploy
-These directories contain the webhook for this repo. The webhook listens for a "push" to Github. Then the script sorts the target directory and then calls the peer test and deploy script to perforem unit tests (Linting for now) and rsync to the remote servers. The (local server is beta_testing jumphost) is is where a local copy of of this repo and active scripts resides.
+There is are ssh-keys to allow the transfer to the update to the remote servers. rsync-key  
+This key will only push github changes to the needed places. 
 
+
+```
+# Directory-specific deployment configuration
+DEPLOYMENT_MAPPINGS = {
+    'Python3_webhook': {
+        'source_dir': 'Python3_webhook',
+        'target_server': 'local',
+        'target_path': '~/myenv/peer_cd/Python3_webhook',
+        'user': 'ubuntu',
+        'ip': None,  # Local deployment
+        'description': 'Python webhook to local server',
+        'excludes': []
+    },
+    'peer_cd_test_deploy': {
+        'source_dir': 'peer_cd_test_deploy',
+        'target_server': 'local',
+        'target_path': '/opt/application/peer_cd_test_deploy',
+        'user': 'ubuntu',
+        'ip': None,  # Local deployment
+        'description': 'Test deployment files to local server',
+        'excludes': []
+    },
+    'monitoring-stack': {
+        'source_dir': 'monitoring-stack',
+        'target_server': 'monitor',
+        'target_path': '/home/ubuntu/peer_cd/monitoring-stack',
+        'user': 'ubuntu',
+        'ip': '172.16.0.20',
+        'description': 'Monitoring stack to monitor server',
+        'excludes': []
+    },
+    'mintbot': {
+        'source_dir': 'mintbot',
+        'target_server': 'monitor',
+        'target_path': '/home/ubuntu/peer_cd/mintbot',
+        'user': 'ubuntu',
+        'ip': '172.16.0.20',
+        'description': 'Monitoring for gem token queries',
+        'excludes': [
+            '.env',
+            'secrets/*',
+            'logs/*'
+            ]
+    },
+    'php-webhook': {
+        'source_dir': 'php-webhook',
+        'target_server': 'deploy-server',
+        'target_path': '/home/ubuntu/deploy-scripts',
+        'user': 'ubuntu',
+        'ip': '172.16.10.194',
+        'description': 'PHP webhook to deploy server',
+        'excludes': []
+    }
+}
+
+# Test configuration (unchanged)
+TEST_CONFIGS = {
+    'python': {
+        'enabled': True,
+        'extension': '.py',
+        'command': ['bash', 'test_python.sh'],
+        'timeout': 60
+    },
+    'php': {
+        'enabled': True,
+        'extension': '.php',
+        'command': ['bash', 'test_php.sh'],
+        'timeout': 60
+    },
+    'bash': {
+        'enabled': True,
+        'extension': '.sh',
+        'command': ['bash', 'test_bash.sh'],
+        'timeout': 60
+    }
+}
+```
