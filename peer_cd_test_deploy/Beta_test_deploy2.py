@@ -59,7 +59,7 @@ logger = setup_logging()
 ### Load configuration from JSON file
 ### This move the configuation away from python code itself
 ##
-def load_config(config_file='deployment_config.json'):
+def load_config(config_file='peer_cd_test_deploy.json'):
     try:
         with open(config_file, 'r') as f:
             config_data = json.load(f)
