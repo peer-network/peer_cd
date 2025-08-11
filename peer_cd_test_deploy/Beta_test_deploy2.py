@@ -35,79 +35,7 @@ LOG_DIR = '/var/log/webhook/'
 SSH_KEY_PATH = "/home/ubuntu/.ssh/rsync-key"
 
 # Directory-specific deployment configuration
-DEPLOYMENT_MAPPINGS = {
-    'Python3_webhook': {
-        'source_dir': 'Python3_webhook',
-        'target_server': 'local',
-        'target_path': '~/myenv/peer_cd/Python3_webhook',
-        'user': 'ubuntu',
-        'ip': None,  # Local deployment
-        'description': 'Python webhook to local server',
-        'excludes': []
-    },
-    'peer_cd_test_deploy': {
-        'source_dir': 'peer_cd_test_deploy',
-        'target_server': 'local',
-        'target_path': '/opt/application/peer_cd_test_deploy',
-        'user': 'ubuntu',
-        'ip': None,  # Local deployment
-        'description': 'Test deployment files to local server',
-        'excludes': []
-    },
-    'monitoring-stack': {
-        'source_dir': 'monitoring-stack',
-        'target_server': 'monitor',
-        'target_path': '/home/ubuntu/peer_cd/monitoring-stack',
-        'user': 'ubuntu',
-        'ip': '172.16.0.20',
-        'description': 'Monitoring stack to monitor server',
-        'excludes': []
-    },
-    'mintbot': {
-        'source_dir': 'mintbot',
-        'target_server': 'monitor',
-        'target_path': '/home/ubuntu/peer_cd/mintbot',
-        'user': 'ubuntu',
-        'ip': '172.16.0.20',
-        'description': 'Monitoring for gem token queries',
-        'excludes': [
-            '.env',
-            'secrets/*',
-            'logs/*'
-            ]
-    },
-    'php-webhook': {
-        'source_dir': 'php-webhook',
-        'target_server': 'deploy-server',
-        'target_path': '/home/ubuntu/deploy-scripts',
-        'user': 'ubuntu',
-        'ip': '172.16.10.194',
-        'description': 'PHP webhook to deploy server',
-        'excludes': []
-    }
-}
 
-# Test configuration (unchanged)
-TEST_CONFIGS = {
-    'python': {
-        'enabled': True,
-        'extension': '.py',
-        'command': ['bash', 'test_python.sh'],
-        'timeout': 60
-    },
-    'php': {
-        'enabled': True,
-        'extension': '.php',
-        'command': ['bash', 'test_php.sh'],
-        'timeout': 60
-    },
-    'bash': {
-        'enabled': True,
-        'extension': '.sh',
-        'command': ['bash', 'test_bash.sh'],
-        'timeout': 60
-    }
-}
 ### Use the logging file for the deployment as the webhook
 ##  this initalize the log for the deployment side of the ci/cd (deploy)
 ##
@@ -126,6 +54,28 @@ def setup_logging():
 
 ###  Look above
 logger = setup_logging()
+
+
+### Load configuration from JSON file
+### This move the configuation away from python code itself
+##
+def load_config(config_file='deployment_config.json'):
+    try:
+        with open(config_file, 'r') as f:
+            config_data = json.load(f)
+            return config_data
+    except Exception as e:
+        logger.error(f"Failed to load config from {config_file}: {str(e)}")
+        sys.exit(1)
+
+### From the routine above
+##  Load the configuration
+config_data = load_config()
+
+### Access the deployment mappings and test configurations from the loaded data
+DEPLOYMENT_MAPPINGS = config_data['DEPLOYMENT_MAPPINGS']
+TEST_CONFIGS = config_data['TEST_CONFIGS']
+
 
 ### What to log 
 ##  Log most data from the testing and deploy
