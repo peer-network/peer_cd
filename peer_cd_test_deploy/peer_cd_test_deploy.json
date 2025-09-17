@@ -45,14 +45,17 @@
             ]
         },
         "php-webhook": {
-            "source_dir": "php-webhook",
-            "target_server": "deploy-server",
-            "target_path": "/home/ubuntu/deploy-scripts",
-            "user": "ubuntu",
-            "ip": "172.16.10.194",
-            "_note": "For Test Backend",
-            "description": "PHP webhook to deploy server",
-            "excludes": []
+        "source_dir": "php-webhook",
+        "target_server": "deploy-server",
+        "target_path": "/home/ubuntu/deploy-scripts",
+        "user": "ubuntu",
+        "ip": "172.16.10.194",
+        "_note": "For Test Backend",
+        "description": "PHP webhook to deploy server",
+        "excludes": [
+            "runtime-data/logs/*",
+            "runtime-data/locks/*"
+        ]
         }
     },
     "TEST_CONFIGS": {
