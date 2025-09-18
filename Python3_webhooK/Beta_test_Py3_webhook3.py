@@ -417,16 +417,34 @@ def handle_webhook():
     # Log webhook data for testing
     log_file = log_webhook_data(webhook_data, event_type)
     
-    ### Proccess github action (push, branch and repo)
+    ### Proccess github action (push & pull_request, branch and repo)
     # Only process push events
-    if event_type != 'push':
+    if event_type not in {"push", "pull_request"}:
         logger.info(f"Ignoring event type: {event_type}")
         return jsonify({'status': 'ignored', 'event': event_type}), 200
-    
+
     # Check if it's the target branch
     if webhook_data.get('ref') != TARGET_BRANCH:
         logger.info(f"Ignoring push to branch: {webhook_data.get('ref')}")
         return jsonify({'status': 'ignored', 'reason': 'wrong branch'}), 200
+
+    if event_type == "push":
+        ref = webhook_data.get("ref", "")
+        if not branch_matches_ref(ref, TARGET_BRANCH):
+            logger.info(f"Ignoring push to ref: {ref}")
+            return jsonify({"status": "ignored", "reason": "wrong branch"}), 200
+
+    elif event_type == "pull_request":
+        action = webhook_data.get("action", "")
+        # Only react to meaningful PR actions
+        if action not in {"opened", "reopened", "synchronize"}:
+            logger.info(f"Ignoring PR action: {action}")
+            return jsonify({"status": "ignored", "reason": f"PR action {action}"}), 200
+
+    base_ref = webhook_data.get("pull_request", {}).get("base", {}).get("ref", "")
+    if base_ref != TARGET_BRANCH:
+        logger.info(f"Ignoring PR targeting base: {base_ref}")
+        return jsonify({"status": "ignored", "reason": "wrong base branch"}), 200
     
     # Check if it's the target repository
     repo_full_name = webhook_data.get('repository', {}).get('full_name', '')
