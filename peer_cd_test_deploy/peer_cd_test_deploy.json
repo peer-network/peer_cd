@@ -46,12 +46,12 @@
         },
         "php-webhook": {
         "source_dir": "php-webhook",
-        "target_server": "deploy-server",
-        "target_path": "/home/ubuntu/deploy-scripts",
+        "target_server": "Test Backend",
+        "target_path": "/home/ubuntu/backend-php-scripts",
         "user": "ubuntu",
         "ip": "172.16.10.194",
         "_note": "For Test Backend",
-        "description": "PHP webhook to deploy server",
+        "description": "PHP webhook cleaner to backend server",
         "excludes": [
             "runtime-data/logs/*",
             "runtime-data/locks/*"
