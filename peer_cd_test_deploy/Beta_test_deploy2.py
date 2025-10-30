@@ -58,7 +58,6 @@ logger = setup_logging()
 
 ### Load configuration from JSON file
 ##  This move the configuation away from python code itself
-##
 def load_config(config_file='peer_cd_test_deploy.json'):
     import os
     try:
