@@ -1,2 +1,6 @@
 .env
 .gitleaks_out/
+
+email.txt
+pass.txt
+tg_bot_api_key.txt
