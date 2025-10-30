@@ -20,6 +20,9 @@ from datetime import datetime
 from pathlib import Path
 import shutil
 
+# Ensure script always runs from its own directory
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
 
 ### Get environment variables passed from webhook
 ##  
