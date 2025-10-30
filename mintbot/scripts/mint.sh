@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Load environment variables
-source /home/ubuntu/peer_cd/mintbot/.env
+source ../.env
 
 # Timestamped log directory
 TS=$(date +"%Y%m%d%H%M%S")
@@ -115,9 +115,9 @@ mkdir -p "$LOGDIR"
 touch "$LOGFILE"
 
 # Load secrets
-email=$(cat /home/ubuntu/peer_cd/mintbot/secrets/email.txt)
-pass=$(cat /home/ubuntu/peer_cd/mintbot/secrets/pass.txt)
-TG_bot_API_key=$(cat /home/ubuntu/peer_cd/mintbot/secrets/tg_bot_api_key.txt)
+email=$(cat ../secrets/email.txt)
+pass=$(cat ../secrets/pass.txt)
+TG_bot_API_key=$(cat ../secrets/tg_bot_api_key.txt)
 
 # Perform login mutation
 login_query=$(cat <<EOF
