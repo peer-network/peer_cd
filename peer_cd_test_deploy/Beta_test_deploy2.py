@@ -60,12 +60,17 @@ logger = setup_logging()
 ##  This move the configuation away from python code itself
 ##
 def load_config(config_file='peer_cd_test_deploy.json'):
+    import os
     try:
-        with open(config_file, 'r') as f:
+        # Always look for the JSON file in the same directory as this script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, config_file)
+
+        with open(config_path, 'r') as f:
             config_data = json.load(f)
             return config_data
     except Exception as e:
-        logger.error(f"Failed to load config from {config_file}: {str(e)}")
+        logger.error(f"Failed to load config from {config_path}: {str(e)}")
         sys.exit(1)
 
 ### From the routine above
