@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 Post-Deployment Script for Testing and Remote Deployment
 Runs unit tests (Python, PHP, Bash) and syncs specific directories to remote servers
@@ -6,7 +7,7 @@ Tsting si good for now.
 
 This is the switchboard for DevOps, as the all (most) of the DevOps.
 So this is teh infrastructure for DevOps 
-Added (mintbot in branch) to the list added exclutions to mintbot rsync excludes
+Added (mintbot in branch) to the list added exclutions to mintbot rsync excludes.
 """
 
 import os
@@ -18,6 +19,9 @@ import glob
 from datetime import datetime
 from pathlib import Path
 import shutil
+
+# Ensure script always runs from its own directory
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 ### Get environment variables passed from webhook
@@ -58,14 +62,18 @@ logger = setup_logging()
 
 ### Load configuration from JSON file
 ##  This move the configuation away from python code itself
-##
 def load_config(config_file='peer_cd_test_deploy.json'):
+    import os
     try:
-        with open(config_file, 'r') as f:
+        # Always look for the JSON file in the same directory as this script
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(script_dir, config_file)
+
+        with open(config_path, 'r') as f:
             config_data = json.load(f)
             return config_data
     except Exception as e:
-        logger.error(f"Failed to load config from {config_file}: {str(e)}")
+        logger.error(f"Failed to load config from {config_path}: {str(e)}")
         sys.exit(1)
 
 ### From the routine above
