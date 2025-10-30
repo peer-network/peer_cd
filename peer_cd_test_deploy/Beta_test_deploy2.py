@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 Post-Deployment Script for Testing and Remote Deployment
 Runs unit tests (Python, PHP, Bash) and syncs specific directories to remote servers
@@ -6,7 +7,7 @@ Tsting si good for now.
 
 This is the switchboard for DevOps, as the all (most) of the DevOps.
 So this is teh infrastructure for DevOps 
-Added (mintbot in branch) to the list added exclutions to mintbot rsync excludes
+Added (mintbot in branch) to the list added exclutions to mintbot rsync excludes.
 """
 
 import os
