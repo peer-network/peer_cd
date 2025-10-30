@@ -180,7 +180,7 @@ run_query() {
 # Run all 3 minting-related queries
 # Run globalwins with custom check
 name="globalwins"
-query="query { globalwins { status ResponseCode } }"
+query="mutation { globalwins { status ResponseCode } }"
 DIR="$LOGDIR/$name"
 
 mkdir -p "$DIR"
@@ -212,7 +212,7 @@ run_query "gemster" "query { gemster { status ResponseCode affectedRows { d0 d1 
 # Final query with custom handling
 # Final query: gemsters with custom check
 name="gemsters"
-query="query { gemsters(day: D1) { status counter ResponseCode affectedRows { winStatus { totalGems gemsintoken bestatigung } userStatus { userid gems tokens percentage details { gemid userid postid fromid gems numbers whereby createdat } } } } }"
+query="mutation { gemsters(day: D1) { status counter ResponseCode affectedRows { winStatus { totalGems gemsintoken bestatigung } userStatus { userid gems tokens percentage details { gemid userid postid fromid gems numbers whereby createdat } } } } }"
 DIR="$LOGDIR/$name"
 
 mkdir -p "$DIR"
