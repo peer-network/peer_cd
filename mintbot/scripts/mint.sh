@@ -1,13 +1,27 @@
 #!/bin/bash
 
-### test push to see deployment.
-### merge good
-
+### Mintbot automation
+### Fixed: absolute path loading for .env and secrets
 
 set -euo pipefail
 
+# Resolve script directory (works anywhere you run it from)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(dirname "$SCRIPT_DIR")"
+
 # Load environment variables
-source ../.env
+if [[ -f "$BASE_DIR/.env" ]]; then
+    source "$BASE_DIR/.env"
+else
+    echo "[ERROR] .env file not found at $BASE_DIR/.env"
+    exit 1
+fi
+
+# Make sure the log root directory exists
+mkdir -p "$path_to_logs_root_dir" || {
+    echo "[ERROR] Could not create log root dir: $path_to_logs_root_dir"
+    exit 1
+}
 
 # Timestamped log directory
 TS=$(date +"%Y%m%d%H%M%S")
@@ -115,9 +129,9 @@ mkdir -p "$LOGDIR"
 touch "$LOGFILE"
 
 # Load secrets
-email=$(cat ../secrets/email.txt)
-pass=$(cat ../secrets/pass.txt)
-TG_bot_API_key=$(cat ../secrets/tg_bot_api_key.txt)
+email=$(cat "$BASE_DIR/secrets/email.txt")
+pass=$(cat "$BASE_DIR/secrets/pass.txt")
+TG_bot_API_key=$(cat "$BASE_DIR/secrets/tg_bot_api_key.txt")
 
 # Perform login mutation
 login_query=$(cat <<EOF
