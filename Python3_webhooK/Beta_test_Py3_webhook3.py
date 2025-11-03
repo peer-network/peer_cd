@@ -381,6 +381,19 @@ def verify_signature(payload_body, signature_header, secret):
     # Compare signatures
     return hmac.compare_digest(expected_signature, signature_header)
 
+def branch_matches_ref(ref: str, target_branch: str) -> bool:
+    """
+    Check if the webhook 'ref' matches the target branch.
+    Example:
+      ref = 'refs/heads/dev'
+      target_branch = 'refs/heads/dev'
+    Returns True if matches.
+    """
+    if not ref or not target_branch:
+        return False
+    return ref.strip() == target_branch.strip()
+
+
 ### Main webhook checking
 ##  Where from, is valid, github, branch, ...abs
 ##
