@@ -36,6 +36,47 @@ The setup of the repo is part of how the webhook work and the placement of the s
 
 Each directory has a point where the code is copied (`rsync`) remotely or locally. 
 
+## ⚠️ Deployment & Configuration Notes (Important)
+
+### 🔒 Environment & Secrets Handling
+To ensure smooth operation of the **Mintbot automation**, configuration and credentials, files must remain outside of deployment sync paths.
+
+**Never commit or push** the following files:
+
+mintbot/.env
+mintbot/secrets/*
+
+
+These files are intentionally listed in `.gitignore` to prevent credentials from being overwritten or leaked during automated rsync updates.
+
+**Required file locations:**
+
+/home/ubuntu/myenv/peer_cd/mintbot/.env
+/home/ubuntu/myenv/peer_cd/mintbot/secrets/email.txt.schema
+/home/ubuntu/myenv/peer_cd/mintbot/secrets/pass.txt.schema
+/home/ubuntu/myenv/peer_cd/mintbot/secrets/tg_bot_api_key.txt.schema
+
+---
+
+### 🧩 Log Configuration
+
+All Mintbot execution logs and Telegram notifications reference the path in .env.
+
+Before running, ensure the log directory exists and has correct permissions:
+
+- sudo mkdir -p /var/log/mintlog
+- sudo chown ubuntu:ubuntu /var/log/mintlog
+- sudo chmod 755 /var/log/mintlog
+
+Log files are created under /var/log/mintlog/mint_<timestamp>/ and rotated automatically by cron jobs. and log path in .env is:
+- path_to_logs_root_dir=/var/log/mintlog
+
+---
+
+### 🪙 Mintbot Automation
+
+The Mintbot (mint.sh) runs daily Berlin Germany time  via cron (10:00 AM) and automatically sends Telegram.
+
 ## Format of Peer CD
 
 As of 04.08.2025
