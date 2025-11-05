@@ -1,0 +1,159 @@
+Continuous Deployment (CD) Flow – Peer Infrastructure
+
+1. Overview
+
+Peer’s continuous deployment (CD) setup uses a jump host (bastion) to coordinate deployments across multiple servers:
+
+Website / Web app
+
+Backend (PHP)
+
+PostgreSQL database
+
+Monitoring stack
+
+⚙️ The CI (GitHub Actions) environment still uses Docker for testing, linting, and validation —
+but the live servers themselves do not run Docker. All deployment scripts act directly on the host OS.
+
+2. Trigger (GitHub Webhook)
+
+Event: pull_request from GitHub peer-network/peer-backend , either pre-release , main, or dev , that will be discussed → triggers a PHP webhook to the jumphost sever where the decision of what sever does it directs to first to start deployement, either sql if Db got modified or to backend if backend got modified  with the existing DB.
+
+Webhook actions:
+
+Reads PR data via GitHub API.
+
+Checks if .sql files were modified.
+
+✅ If SQL files changed → connects (via jump host) to PostgreSQL server and runs update-database.sh.
+
+🚫 If no SQL changes → triggers backend deployment directly.
+
+Authentication:
+Via GitHub token stored in .env.deploy.
+
+3. Jump Host / Bastion
+
+All SSH traffic passes through the jump host (172.16.0.17), which securely connects to:
+
+PostgreSQL server 
+
+Backend server 
+
+Monitoring server (peer-monitor)
+
+SSH setup:
+
+Uses ProxyCommand to tunnel through bastion.
+
+Authentication key: /home/ubuntu/.ssh/php-db-migr8.
+
+The jump host ensures controlled access and traceability for all remote deployments.
+
+4. Database Deployment Flow (SQL changed)
+
+Script: /home/ubuntu/update-database.sh (on PostgreSQL server)
+
+Steps:
+
+Extract PR number → e.g. peer_db_pr_<PR_NUMBER>.
+
+Clone base database (using createdb --template or pg_dump/psql).
+
+Apply all new .sql migrations sequentially.
+
+On success → trigger backend deployment via webhook/SSH.
+
+On failure → abort (backend not triggered).
+
+Rollback logic:
+If the backend deployment fails after DB update:
+
+Drop the new DB.
+
+Retain the previous DB as active.
+
+Notification:
+Discord message via webhook (success/failure + developer mentions).
+
+5. Backend Deployment Flow (Non-Docker For sever)
+
+Script: /home/ubuntu/deploy-backend.sh (on backend server)
+
+Note: the deploy backend.sh script is already set, though there will be changes on it
+and there are two scripts one is a one time setup script, that installs whats neeeds to be on the sever that the second script which is the runtime scripts needs to run the Runtime behaviour if there is modified changes or update in the backend code.
+
+Steps:
+
+#!/bin/bash
+set -e
+
+echo "=== Pulling latest backend code ==="
+cd /var/www/html
+git pull
+
+echo "=== Updating Composer dependencies ==="
+composer install --no-dev --prefer-dist --no-interaction
+composer dump-autoload -o
+
+echo "=== Generating backend config files ==="
+bash /var/www/html/cd-generate-backend-config.sh
+
+echo "=== Building Rust module if present ==="
+if [ -f /var/www/html/tokencalculation/Cargo.toml ]; then
+  cd /var/www/html/tokencalculation
+  source $HOME/.cargo/env
+  cargo build --release
+  cd /var/www/html
+else
+  echo "No Rust module found, skipping build."
+fi
+
+echo "=== Fixing ownership and permissions ==="
+sudo chown -R www-data:www-data /var/www/html/
+sudo find /var/www/html/ -type d -exec chmod 755 {} \;
+sudo find /var/www/html/ -type f -exec chmod 644 {} \;
+
+echo "=== Backend runtime update complete ==="
+
+
+Send Discord notification with deployment outcome.
+
+6. Monitoring Layer
+
+Server: peer-monitor
+
+Scripts:
+
+monitor-api.sh / monitor-api-py.sh
+
+Run via cron every 3 minutes using Newman with Postman collections.
+
+Checks:
+
+Login
+
+List posts 1–20
+
+List posts 21–40 Copy
+
+On failure:
+Send Telegram alert with:
+
+Request name
+
+Request + response body
+
+Timestamp
+
+Metrics collected by Prometheus and visualized in Grafana dashboards.
+
+7. Expansion Strategy
+
+Once verified on the single “test” environment:
+
+Replicate same flow to other environments (e.g., production, staging).
+
+Only adjust host IPs, SSH keys, and tokens.
+
+The bastion acts as the central orchestrator across all.
