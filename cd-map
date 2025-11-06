@@ -192,3 +192,5 @@ PHP Webhook (Backend)
                                                 │
                                                 ├─ Success → Notify Discord & Monitoring
                                                 └─ Fail → (no rollback)
+
+This flow ensures that every deployment follows a controlled, automated sequence — with the webhook deciding the path, the jump host executing securely, and rollback protection in place if any stage fails.
