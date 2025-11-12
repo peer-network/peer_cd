@@ -7,13 +7,6 @@ regex = '''(?i)(ghp_[0-9A-Za-z]{36}|github_pat_[0-9A-Za-z_]{20,}|glpat-[0-9A-Za-
 tags = ["key", "secret", "terraform", "infrastructure"]
 
 [[rules]]
-id = "infra-entropy-catch-all"
-description = "Catch high-entropy strings for unknown secrets (Terraform, YAML, JSON, env)"
-regex = '''[A-Za-z0-9\+=!@#$%^&*._-]{30,}'''
-entropy = 4.0
-tags = ["key", "secret", "terraform", "infrastructure"]
-
-[[rules]]
 id = "grafana-api-tokens"
 description = "Detect Grafana, Loki, or Prometheus API tokens"
 regex = '''(?i)(grafana[_-]api[_-]?key\s*[:=]\s*["']?[A-Za-z0-9_-]{20,}|bearer\s+[A-Za-z0-9\-_]{20,})'''
