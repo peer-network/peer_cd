@@ -19,7 +19,9 @@ fi
 
 echo "*** [$(date '+%Y-%m-%d %H:%M:%S')] Starting cleanup... ***" >> "$LOG_FILE" 
 echo "Finding files from $TMP_DIR"
+#
 FIND_COUNT=$(find "$TMP_DIR" -type f -mmin +1440 -print | wc -l)
+#
 echo "Found $FIND_COUND files older then required"
 
 # Check for dry-run mode
