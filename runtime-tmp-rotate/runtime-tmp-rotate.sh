@@ -27,11 +27,11 @@ echo "Found $FIND_COUND files older then required"
 # Check for dry-run mode
 if [[ "$1" == "--delete" ]]; then
     echo "[INFO] Running in delete mode" >> "$LOG_FILE"
-    FIND_CMD=(find "$TMP_DIR" -type f -mmin +1440 -print -delete)
+    FIND_CMD=$(find "$TMP_DIR" -type f -mmin +1440 -print -delete)
     EFFECT=DELETED_FILES
 else
     echo "[INFO] Running in dry-run mode (no files will be deleted)" >> "$LOG_FILE"
-    FIND_CMD=(find "$TMP_DIR" -type f -mmin +1440 -print)
+    FIND_CMD=$(find "$TMP_DIR" -type f -mmin +1440 -print)
     EFFECT=FIND_ONLY
 fi
 
