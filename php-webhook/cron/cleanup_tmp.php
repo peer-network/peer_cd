@@ -10,8 +10,51 @@ declare(strict_types=1);
 
 date_default_timezone_set('UTC');
 
+// Ensure we always define this before use
+$projectRoot = null;
+
+function printUsageAndExit(): void {
+    fwrite(STDERR, "Usage: php cleanup_tmp.php --project-root=/absolute/path | -p /absolute/path\n");
+    fwrite(STDERR, "Example: php cleanup_tmp.php -p /var/www/myapp\n");
+    exit(2);
+}
+
+// Support: -p /path or --project-root=/path or --project-root /path
+// Only run when in CLI SAPI
+if (PHP_SAPI !== 'cli') {
+    fwrite(STDERR, "ERROR: This script must be run from CLI.\n");
+    exit(2);
+}
+
+// Parse required argument: -p /path or --project-root=/path or --project-root /path
+$opts = @getopt('p:', ['project-root:']);
+if ($opts === false) {
+    printUsageAndExit();
+}
+
+$override = $opts['p'] ?? ($opts['project-root'] ?? null);
+if ($override === null) {
+    fwrite(STDERR, "ERROR: Missing required --project-root argument.\n");
+    printUsageAndExit();
+}
+
+$override = trim((string)$override);
+if ($override === '') {
+    fwrite(STDERR, "ERROR: --project-root requires a non-empty path\n");
+    exit(2);
+}
+if (!is_dir($override)) {
+    fwrite(STDERR, "ERROR: project root not a directory: {$override}\n");
+    exit(2);
+}
+$resolved = realpath($override);
+if ($resolved === false) {
+    fwrite(STDERR, "ERROR: failed to resolve project root: {$override}\n");
+    exit(2);
+}
+$projectRoot = rtrim($resolved, DIRECTORY_SEPARATOR);
+
 // --- Paths ---
-$projectRoot     = dirname(__DIR__);
 $tmpDir          = $projectRoot . '/runtime-data/media/tmp';
 $logRootDir      = $projectRoot . '/runtime-data/logs';
 $workerLogDir    = $logRootDir . '/cron-workers/upload-post-tmp-files-cleanup';
