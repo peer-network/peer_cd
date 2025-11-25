@@ -215,151 +215,136 @@ def deploy_locally(source_dir, repo_info):
         os.makedirs(LOCAL_DEPLOY_DIR, exist_ok=True)
         logger.info(f"Created local deployment directory: {LOCAL_DEPLOY_DIR}")
     
-    # Use rsync to sync files locally
-    rsync_cmd = [
-        'rsync',
-        '-avz',
-        '--delete',
-        f'{source_dir}/',
-        LOCAL_DEPLOY_DIR
-    ]
+    # Log deployment start
+    logger.info(f"Starting local deployment from {source_dir} to {LOCAL_DEPLOY_DIR}")
     
-    logger.info(f"Deploying to local directory: {LOCAL_DEPLOY_DIR}")
-    
-    result = subprocess.run(rsync_cmd, capture_output=True, text=True)
-    
-    if result.returncode == 0:
-        logger.info(f"Successfully deployed to {LOCAL_DEPLOY_DIR}")
+    # Deploy each expected directory
+    deployment_success = True
+    for expected_dir in EXPECTED_DIRECTORIES:
+        source_path = os.path.join(source_dir, expected_dir)
+        if not os.path.exists(source_path):
+            logger.warning(f"Skipping {expected_dir} - not found in source")
+            continue
         
-        # Log which directories were deployed
-        deployed_dirs = []
-        for expected_dir in EXPECTED_DIRECTORIES:
-            local_dir_path = os.path.join(LOCAL_DEPLOY_DIR, expected_dir)
-            if os.path.exists(local_dir_path):
-                deployed_dirs.append(expected_dir)
+        target_path = os.path.join(LOCAL_DEPLOY_DIR, expected_dir)
+        logger.info(f"Deploying {expected_dir}...")
         
-        if deployed_dirs:
-            logger.info(f"Deployed directories: {', '.join(deployed_dirs)}")
-        
-        return True
-    else:
-        logger.error(f"Failed to deploy locally: {result.stderr}")
-        return False
-
-
-### If the pull is successful then test and deploy to the target servers
-##  ready for testing, agian.  
-##
-def run_post_deployment_script(repo_info):
-    """Run the post-deployment script for testing and remote deployment"""
-    script_path = "/home/ubuntu/myenv/peer_cd/peer_cd_test_deploy/Beta_test_deploy2.py"
-    
-    if not os.path.exists(script_path):
-        logger.warning(f"Post-deployment script not found at {script_path}")
-        return True  # Don't fail webhook if script doesn't exist
-    
-    logger.info("Running post-deployment script...")
-    
-    # Run the script with repository info as environment variables
-    env = os.environ.copy()
-    env.update({
-        'REPO_NAME': repo_info['repository_name'],
-        'REPO_BRANCH': repo_info['branch'],
-        'COMMIT_SHA': repo_info['commit_sha'] or '',
-        'COMMIT_MESSAGE': repo_info['commit_message'] or '',
-        'AUTHOR': repo_info['author'] or '',
-        'DEPLOY_DIR': LOCAL_DEPLOY_DIR
-    })
-    
-    try:
-        result = subprocess.run(
-            ['python3', script_path],
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=600  # 10 minute timeout (increased for multiple deployments)
-        )
-        
-        if result.returncode == 0:
-            logger.info("Post-deployment script completed successfully")
-            if result.stdout.strip():
-                logger.info(f"Script output: {result.stdout.strip()}")
-            return True
-        else:
-            logger.error(f"Post-deployment script failed with exit code {result.returncode}")
-            if result.stderr.strip():
-                logger.error(f"Script error: {result.stderr.strip()}")
-            return False
-            
-    except subprocess.TimeoutExpired:
-        logger.error("Post-deployment script timed out after 10 minutes")
-        return False
-    except Exception as e:
-        logger.error(f"Error running post-deployment script: {str(e)}")
-        return False
-
-    ## If I need to update this code (webhook)
-    #  To self update the webhook
-    #  This should be the LAST event done for this deployment
-    #
-    webhook_updated = any(f.startswith('Python3_webhook2.py') for f in webhook_data['head_commit']['modified'])
-    logger.info(f"Is there webhook update: {webhook_updated}")
-    
-    if webhook_data:
-        logger.info(f"Self update needed: /home/ubuntu/myenv/peer_cd/ from {LOCAL_DEPLOY_DIR}.")
         try:
-            # Pull new code
-            subprocess.run(["cp", "/opt/application/Python_webook/Python3_webhook2.py", "/home/ubuntu/myenv/peer_cd/Python3_webhook2.py"], check=True)
-            # Restart the systemd service
-            subprocess.run(["sudo", "systemctl", "restart", "webhook_py_github.service"], check=True)
-            return True
-
+            # Use rsync for efficient syncing
+            # -a: archive mode (preserves permissions, timestamps, etc.)
+            # -v: verbose
+            # --delete: remove files in destination that don't exist in source
+            cmd = [
+                'rsync',
+                '-av',
+                '--delete',
+                f'{source_path}/',
+                f'{target_path}/'
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            logger.info(f"Successfully deployed {expected_dir}")
+            logger.debug(f"rsync output: {result.stdout}")
+            
         except subprocess.CalledProcessError as e:
-            logger.error(f"[ERROR] Self-update failed: {e}")
-            return False
-        
-        return jsonify({'status': 'restarting'}), 202
-
-
-### Where the actions after a good pull is proccessed
-##  Either call a shell script or porceess by python
-##
-def process_deployment(webhook_data):
-    """Process the deployment based on webhook data"""
-    repo_info = extract_repo_info(webhook_data)
+            logger.error(f"Failed to deploy {expected_dir}: {e.stderr}")
+            deployment_success = False
     
-    logger.info(f"Processing deployment for {repo_info['repository_name']}")
-    logger.info(f"Branch: {repo_info['branch']}, Commit: {repo_info['commit_sha']}")
-    logger.info(f"Commit message: {repo_info['commit_message']}")
+    return deployment_success
+
+def run_tests(test_dir):
+    """Run tests in the test directory"""
+    logger.info(f"Running tests in {test_dir}")
+    
+    # Look for test scripts or files
+    test_scripts = []
+    if os.path.exists(test_dir):
+        for file in os.listdir(test_dir):
+            if file.startswith('test_') and file.endswith('.py'):
+                test_scripts.append(os.path.join(test_dir, file))
+    
+    if not test_scripts:
+        logger.warning("No test scripts found")
+        return True
+    
+    # Run each test script
+    all_tests_passed = True
+    for test_script in test_scripts:
+        logger.info(f"Running test script: {test_script}")
+        try:
+            result = subprocess.run(
+                ['python3', test_script],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            
+            if result.returncode == 0:
+                logger.info(f"Test passed: {test_script}")
+            else:
+                logger.error(f"Test failed: {test_script}")
+                logger.error(f"Test output: {result.stdout}")
+                logger.error(f"Test errors: {result.stderr}")
+                all_tests_passed = False
+                
+        except subprocess.TimeoutExpired:
+            logger.error(f"Test timeout: {test_script}")
+            all_tests_passed = False
+        except Exception as e:
+            logger.error(f"Error running test {test_script}: {str(e)}")
+            all_tests_passed = False
+    
+    return all_tests_passed
+
+def process_deployment(webhook_data):
+    """Main deployment process"""
+    logger.info("Starting deployment process")
+    
+    # Extract repository information
+    repo_info = extract_repo_info(webhook_data)
+    logger.info(f"Repository: {repo_info['repository_name']}")
+    logger.info(f"Branch: {repo_info['branch']}")
+    logger.info(f"Commit: {repo_info['commit_sha']}")
     logger.info(f"Author: {repo_info['author']}")
+    logger.info(f"Message: {repo_info['commit_message']}")
+    
+    # Log file changes
+    if repo_info['modified_files']:
+        logger.info(f"Modified files: {', '.join(repo_info['modified_files'])}")
+    if repo_info['added_files']:
+        logger.info(f"Added files: {', '.join(repo_info['added_files'])}")
+    if repo_info['removed_files']:
+        logger.info(f"Removed files: {', '.join(repo_info['removed_files'])}")
     
     # Clone or pull repository
     clone_dir = clone_or_pull_repository(repo_info)
     if not clone_dir:
+        logger.error("Failed to clone/pull repository")
         return False
     
     # Validate repository structure
     if not validate_repository_structure(clone_dir):
-        logger.warning("Repository structure validation failed, but continuing with deployment")
+        logger.error("Repository structure validation failed")
+        return False
     
-    # Deploy locally first
+    # Deploy locally
     deployment_success = deploy_locally(clone_dir, repo_info)
     
     if deployment_success:
         logger.info("Local deployment completed successfully")
         
-        # Run post-deployment script (tests and remote deployment)
-        post_deploy_success = run_post_deployment_script(repo_info)
-        
-        if not post_deploy_success:
-            logger.error("Post-deployment script failed")
-            return False
-        
-    ## Note: We're not cleaning up the cloned directory anymore
-    # so we can do incremental pulls instead of full clones
-    #
-        deploy_error = run_post_deployment_script(repo_info)
-        if deploy_error:
+        # Run tests if test directory exists
+        test_path = os.path.join(LOCAL_DEPLOY_DIR, 'peer_cd_test_deploy')
+        if os.path.exists(test_path):
+            logger.info("Running deployment tests...")
+            tests_passed = run_tests(test_path)
+            if tests_passed:
+                logger.info("All tests passed")
+            else:
+                logger.warning("Some tests failed - review test logs")
+        else:
+            logger.info("No test directory found - skipping tests")
+    else:
             logger.error(f"Deploy and Test")
 
     ### End deploy
@@ -381,7 +366,7 @@ def verify_signature(payload_body, signature_header, secret):
     # Compare signatures
     return hmac.compare_digest(expected_signature, signature_header)
 
-def branch_matches_ref(ref: str, target_branch: str) -> bool:
+def branch_matches_ref(ref, target_branch):
     """
     Check if the webhook 'ref' matches the target branch.
     Example:
@@ -430,23 +415,20 @@ def handle_webhook():
     # Log webhook data for testing
     log_file = log_webhook_data(webhook_data, event_type)
     
-    ### Proccess github action (push & pull_request, branch and repo)
-    # Only process push events
+    ### Process github action (push & pull_request, branch and repo)
+    # Only process push events and pull_request events
     if event_type not in {"push", "pull_request"}:
         logger.info(f"Ignoring event type: {event_type}")
         return jsonify({'status': 'ignored', 'event': event_type}), 200
 
-    # Check if it's the target branch
-    if webhook_data.get('ref') != TARGET_BRANCH:
-        logger.info(f"Ignoring push to branch: {webhook_data.get('ref')}")
-        return jsonify({'status': 'ignored', 'reason': 'wrong branch'}), 200
-
+    # Handle push events
     if event_type == "push":
         ref = webhook_data.get("ref", "")
         if not branch_matches_ref(ref, TARGET_BRANCH):
-            logger.info(f"Ignoring push to ref: {ref}")
+            logger.info(f"Ignoring push to ref: {ref} (expected: {TARGET_BRANCH})")
             return jsonify({"status": "ignored", "reason": "wrong branch"}), 200
 
+    # Handle pull_request events
     elif event_type == "pull_request":
         action = webhook_data.get("action", "")
         # Only react to meaningful PR actions
@@ -454,10 +436,13 @@ def handle_webhook():
             logger.info(f"Ignoring PR action: {action}")
             return jsonify({"status": "ignored", "reason": f"PR action {action}"}), 200
 
-    base_ref = webhook_data.get("pull_request", {}).get("base", {}).get("ref", "")
-    if base_ref != TARGET_BRANCH:
-        logger.info(f"Ignoring PR targeting base: {base_ref}")
-        return jsonify({"status": "ignored", "reason": "wrong base branch"}), 200
+        # Check if PR targets the correct base branch
+        base_ref = webhook_data.get("pull_request", {}).get("base", {}).get("ref", "")
+        # Convert base_ref to full ref format for comparison
+        full_base_ref = f"refs/heads/{base_ref}" if not base_ref.startswith("refs/") else base_ref
+        if not branch_matches_ref(full_base_ref, TARGET_BRANCH):
+            logger.info(f"Ignoring PR targeting base: {base_ref} (expected: {TARGET_BRANCH})")
+            return jsonify({"status": "ignored", "reason": "wrong base branch"}), 200
     
     # Check if it's the target repository
     repo_full_name = webhook_data.get('repository', {}).get('full_name', '')
