@@ -110,7 +110,7 @@ The directory structure is:
 │       └── monitor_api_py.ph
 ├── payload.json              (test .json)
 ├── peer_cd_test_deploy       (Where the test and deploy scripts are located)
-│   ├── Beta_test_deploy.py   (Called from Python3_webhook2.py)
+│   ├── Beta_test_deploy.py   (Called from Python3_webhook3.py)
 │   ├── test_bash.sh
 │   ├── test_php.sh
 │   └── test_python.sh
@@ -128,10 +128,10 @@ This key will only push github changes to the needed places.
 ```
 # Directory-specific deployment configuration
 DEPLOYMENT_MAPPINGS = {
-    'Python3_webhook': {
-        'source_dir': 'Python3_webhook',
+    'Python3_webhooK': {
+        'source_dir': 'Python3_webhooK',
         'target_server': 'local',
-        'target_path': '~/myenv/peer_cd/Python3_webhook',
+        'target_path': '~/myenv/peer_cd/Python3_webhooK',
         'user': 'ubuntu',
         'ip': None,  # Local deployment
         'description': 'Python webhook to local server',
