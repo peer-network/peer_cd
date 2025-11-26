@@ -207,9 +207,10 @@ def deploy_directory_locally(mapping_config, mapping_name):
     
     # Rsync command for local deployment
     # the work for copying the files to their desinations
+    # Adding R for subdirectories 
     rsync_cmd = [
         'rsync',
-        '-avz',
+        '-avzR',
         '--delete',
         f'{source_path}/',
         f'{target_path}/'
