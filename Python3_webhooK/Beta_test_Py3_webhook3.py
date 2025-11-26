@@ -34,7 +34,7 @@ REPO_CLONE_DIR = '/tmp/peer_cd/'
 DETAILED_RSYNC_LOGGING = os.environ.get('DETAILED_RSYNC_LOGGING', 'false').lower() == 'true',
 
 EXPECTED_DIRECTORIES = [
-    'Python3_webhook',
+    'Python3_webhooK',
     'peer_cd_test_deploy',
     'monitoring-stack',
     'php-webhook'
