@@ -3,11 +3,6 @@
 """
 Post-Deployment Script for Testing and Remote Deployment
 Runs unit tests (Python, PHP, Bash) and syncs specific directories to remote servers
-Tsting si good for now.
-
-This is the switchboard for DevOps, as the all (most) of the DevOps.
-So this is teh infrastructure for DevOps 
-Added (mintbot in branch) to the list added exclutions to mintbot rsync excludes.
 """
 
 import os
@@ -25,7 +20,6 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 ### Get environment variables passed from webhook
-##  
 REPO_NAME = os.environ.get('REPO_NAME', 'unknown')
 REPO_BRANCH = os.environ.get('REPO_BRANCH', 'unknown')
 COMMIT_SHA = os.environ.get('COMMIT_SHA', 'unknown')
@@ -33,8 +27,9 @@ COMMIT_MESSAGE = os.environ.get('COMMIT_MESSAGE', 'unknown')
 AUTHOR = os.environ.get('AUTHOR', 'unknown')
 DEPLOY_DIR = os.environ.get('DEPLOY_DIR', '/opt/application/')
 LOCAL_TEST_DIR = os.environ.get('LOCAL_TEST_DIR', '/opt/application/peer_cd_test_deploy/')
-# Detailed logging for rsync operations (set to True for troubleshooting)
-DETAILED_RSYNC_LOGGING = os.environ.get('DETAILED_RSYNC_LOGGING', 'false').lower() == 'true',
+
+# CHANGE: Fixed typo - removed trailing comma that made this a tuple instead of boolean
+DETAILED_RSYNC_LOGGING = os.environ.get('DETAILED_RSYNC_LOGGING', 'false').lower() == 'true'
 
 
 # Configuration
@@ -45,8 +40,6 @@ SSH_KEY_PATH = "/home/ubuntu/.ssh/rsync-key"
 # Directory-specific deployment configuration
 
 ### Use the logging file for the deployment as the webhook
-##  this initalize the log for the deployment side of the ci/cd (deploy)
-##
 def setup_logging():
     """Setup logging to use the same log file as webhook"""
     log_file = os.path.join(LOG_DIR, 'webhook.log')
@@ -60,12 +53,10 @@ def setup_logging():
     )
     return logging.getLogger('post_deploy')
 
-###  Look above
 logger = setup_logging()
 
 
 ### Load configuration from JSON file
-##  This move the configuation away from python code itself
 def load_config(config_file='peer_cd_test_deploy.json'):
     import os
     try:
@@ -80,8 +71,6 @@ def load_config(config_file='peer_cd_test_deploy.json'):
         logger.error(f"Failed to load config from {config_path}: {str(e)}")
         sys.exit(1)
 
-### From the routine above
-##  Load the configuration
 config_data = load_config()
 
 ### Access the deployment mappings and test configurations from the loaded data
@@ -90,8 +79,6 @@ TEST_CONFIGS = config_data['TEST_CONFIGS']
 
 
 ### What to log 
-##  Log most data from the testing and deploy
-##
 def log_deployment_info():
     """Log deployment information"""
     logger.info("=" * 60)
@@ -103,12 +90,10 @@ def log_deployment_info():
     logger.info(f"Message: {COMMIT_MESSAGE}")
     logger.info(f"Author: {AUTHOR}")
     logger.info(f"Deploy Directory: {DEPLOY_DIR}")
+    logger.info(f"Detailed rsync logging: {'ENABLED' if DETAILED_RSYNC_LOGGING else 'DISABLED'}")
     logger.info("=" * 60)
 
 ### Setup testing for the code updates for DevOps
-##  For now only test for syntax (linting) 
-##  Maybe more later set testing of all set types of files
-## 
 def run_tests():
     """Run unit tests for Python, PHP, and Bash"""
     logger.info("*** Starting unit tests... ***")
@@ -121,8 +106,6 @@ def run_tests():
             logger.info(f"Skipping {test_type} tests (disabled)")
             continue
         
-        ## Test_file = os.path.join(LOCAL_TEST_DIR, config['test_file'])
-        #  Added logging of files 
         files_to_test = []
 
         for root, _, files in os.walk(DEPLOY_DIR):
@@ -138,8 +121,6 @@ def run_tests():
         
         
         try:
-            # Change to deploy directory to run tests
-            # Set to local testing dir
             logger.info(f"Running {test_type} test on {len(files_to_test)} files")
 
             result = subprocess.run(
@@ -189,11 +170,10 @@ def run_tests():
 def deploy_directory_locally(mapping_config, mapping_name):
     """Deploy a specific directory locally using rsync"""
 
-
     source_path = os.path.join(DEPLOY_DIR, mapping_config['source_dir'])
     target_path = mapping_config['target_path']
     
-    logger.info(f"*** Starting Local Deploymet... {source_path} -> {target_path} ***")
+    logger.info(f"*** Starting Local Deployment... {source_path} -> {target_path} ***")
 
     # Expand tilde in target path
     if target_path.startswith('~/'):
@@ -213,22 +193,37 @@ def deploy_directory_locally(mapping_config, mapping_name):
         logger.error(f"Failed to create target directory {target_path}: {str(e)}")
         return False
     
-    # Rsync command for local deployment
-    # the work for copying the files to their desinations
-    # Adding R for subdirectories 
+    # CHANGE: Build rsync command with optional detailed logging
     rsync_cmd = [
         'rsync',
-        '-avzR',
-        '--delete',
-        f'{source_path}/',
-        f'{target_path}/'
+        '-avR',  # a=archive, v=verbose, R=relative (preserves subdirs like cron/)
+        '--delete'
     ]
     
+    # CHANGE: Add detailed logging flags if enabled
+    if DETAILED_RSYNC_LOGGING:
+        rsync_cmd.append('--itemize-changes')  # Shows per-file changes
+        logger.info(f"Detailed rsync logging ENABLED for local deployment")
+    
+    rsync_cmd.extend([
+        f'{source_path}/',
+        f'{target_path}/'
+    ])
+    
     try:
-        result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=300)
+        result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=60)
         
         if result.returncode == 0:
             logger.info(f"Successfully deployed {mapping_name} locally")
+            
+            # CHANGE: Log detailed output if enabled
+            if DETAILED_RSYNC_LOGGING and result.stdout:
+                logger.info(f"=== Rsync details for {mapping_name} ===")
+                for line in result.stdout.strip().split('\n'):
+                    if line.strip():
+                        logger.info(f"  {line}")
+                logger.info(f"=== End rsync details ===")
+            
             return True
         else:
             logger.error(f"Failed to deploy {mapping_name} locally")
@@ -250,13 +245,10 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     target_path = mapping_config['target_path']
     server_ip = mapping_config['ip']
     server_user = mapping_config['user']
-    exclude_dir = mapping_config['excludes']
+    exclude_patterns = mapping_config.get('excludes', [])  # CHANGE: renamed for clarity
     
-    logger.info(f"*** Starting Deploymet... {source_path} -> {target_path} ***")
+    logger.info(f"*** Starting Remote Deployment... {source_path} -> {server_user}@{server_ip}:{target_path} ***")
 
-
-    logger.info(f"Deploying {mapping_name} to {server_ip}: {source_path} -> {target_path}")
-    
     # Check if source directory exists
     if not os.path.exists(source_path):
         logger.warning(f"Source directory not found: {source_path}")
@@ -281,27 +273,47 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     except Exception as e:
         logger.warning(f"Could not create remote directory (may already exist): {str(e)}")
     
-    # Rsync command for remote deployment
+    # CHANGE: Build rsync command cleanly with optional detailed logging
     rsync_cmd = [
         'rsync',
-        '-avzR',
+        '-avzR',  # a=archive, v=verbose, z=compress, R=relative (preserves subdirs)
         '--delete',
-        '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no',
+        '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no'
+    ]
+    
+    # CHANGE: Add detailed logging flags if enabled
+    if DETAILED_RSYNC_LOGGING:
+        rsync_cmd.append('--itemize-changes')  # Shows per-file changes
+        rsync_cmd.append('--stats')            # Shows transfer statistics
+        logger.info(f"Detailed rsync logging ENABLED for remote deployment to {mapping_name}")
+    
+    # Add exclude patterns
+    for pattern in exclude_patterns:
+        rsync_cmd.extend(['--exclude', pattern])
+    
+    # Add source and destination
+    rsync_cmd.extend([
         f'{source_path}/',
         f'{server_user}@{server_ip}:{target_path}/'
-    ]
+    ])
 
-    if exclude_dir:
-        for pattern in exclude_dir:
-            rsync_cmd += ['--exclude', pattern]
-
-    logger.info(f"rsync command {rsync_cmd}")
+    logger.info(f"Executing rsync to {server_ip}...")
+    logger.debug(f"Full rsync command: {' '.join(rsync_cmd)}")
 
     try:
         result = subprocess.run(rsync_cmd, capture_output=True, text=True, timeout=300)
         
         if result.returncode == 0:
             logger.info(f"Successfully deployed {mapping_name} to {server_ip}")
+            
+            # CHANGE: Log detailed output if enabled
+            if DETAILED_RSYNC_LOGGING and result.stdout:
+                logger.info(f"=== Rsync details for {mapping_name} ===")
+                for line in result.stdout.strip().split('\n'):
+                    if line.strip():
+                        logger.info(f"  {line}")
+                logger.info(f"=== End rsync details ===")
+            
             return True
         else:
             logger.error(f"Failed to deploy {mapping_name} to {server_ip}")
@@ -433,7 +445,7 @@ def main():
 
         # Show output or error
         if result.returncode == 0:
-            logger.info("=== Local Rsync from /opt/applicaiton completed successfully. ===")
+            logger.info("=== Local Rsync from /opt/application completed successfully. ===")
         else:
             logger.info(" <<>> Local Rsync failed /opt/application <<>>")
             
