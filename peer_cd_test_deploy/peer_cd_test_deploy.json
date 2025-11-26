@@ -47,7 +47,7 @@
         "php-webhook": {
         "source_dir": "php-webhook",
         "target_server": "Test Backend",
-        "target_path": "/home/ubuntu/backend-php-scripts",
+        "target_path": "/home/ubuntu/",
         "user": "ubuntu",
         "ip": "172.16.10.194",
         "_note": "For Test Backend",
