@@ -33,10 +33,14 @@ COMMIT_MESSAGE = os.environ.get('COMMIT_MESSAGE', 'unknown')
 AUTHOR = os.environ.get('AUTHOR', 'unknown')
 DEPLOY_DIR = os.environ.get('DEPLOY_DIR', '/opt/application/')
 LOCAL_TEST_DIR = os.environ.get('LOCAL_TEST_DIR', '/opt/application/peer_cd_test_deploy/')
+# Detailed logging for rsync operations (set to True for troubleshooting)
+DETAILED_RSYNC_LOGGING = os.environ.get('DETAILED_RSYNC_LOGGING', 'false').lower() == 'true',
+
 
 # Configuration
 LOG_DIR = '/var/log/webhook/'
 SSH_KEY_PATH = "/home/ubuntu/.ssh/rsync-key"
+
 
 # Directory-specific deployment configuration
 
@@ -273,7 +277,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     # Rsync command for remote deployment
     rsync_cmd = [
         'rsync',
-        '-avz',
+        '-avzR',
         '--delete',
         '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no',
         f'{source_path}/',

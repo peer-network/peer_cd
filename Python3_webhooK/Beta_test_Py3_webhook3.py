@@ -30,6 +30,8 @@ LOCAL_TEST_DIR = "/opt/application/peer_cd_test_deploy"
 LOG_DIR = '/var/log/webhook/'
 PROCESSING_DIR = '/var/log/webhook/events/'
 REPO_CLONE_DIR = '/tmp/peer_cd/'
+# Detailed logging for rsync operations (set to True for troubleshooting)
+DETAILED_RSYNC_LOGGING = os.environ.get('DETAILED_RSYNC_LOGGING', 'false').lower() == 'true',
 
 EXPECTED_DIRECTORIES = [
     'Python3_webhook',
@@ -55,7 +57,7 @@ def setup_logging():
     """Setup logging configuration"""
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(PROCESSING_DIR, exist_ok=True)
-    
+
     log_file = os.path.join(LOG_DIR, 'webhook.log')
     logging.basicConfig(
         level=logging.INFO,
@@ -229,14 +231,44 @@ def deploy_locally(source_dir, repo_info):
                 f'{source_path}/',
                 f'{target_path}/'
             ]
+
+            # ADD: Include itemized changes if detailed logging is enabled
+            if DETAILED_RSYNC_LOGGING:
+                cmd.append('--itemize-changes')  # Shows what changed per file
+                logger.info(f"Detailed rsync logging ENABLED for {expected_dir}")
+            
+            cmd.extend([
+                f'{source_path}/',
+                f'{target_path}/'
+            ])
             
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             logger.info(f"Successfully deployed {expected_dir}")
-            logger.debug(f"rsync output: {result.stdout}")
-            
+            # logger.debug(f"rsync output: {result.stdout}")
+
+                        # ADD: Log detailed output if enabled
+            if DETAILED_RSYNC_LOGGING and result.stdout:
+                logger.info(f"=== Rsync details for {expected_dir} ===")
+                for line in result.stdout.strip().split('\n'):
+                    if line.strip():  # Skip empty lines
+                        logger.info(f"  {line}")
+                logger.info(f"=== End rsync details for {expected_dir} ===")
+            elif result.stdout:
+                # Just log summary line count when not detailed
+                file_count = len([l for l in result.stdout.split('\n') if l.strip() and not l.startswith('sending')])
+                logger.debug(f"Processed {file_count} items in {expected_dir}")
+
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to deploy {expected_dir}: {e.stderr}")
-            deployment_success = False
+            # ADD: Log stderr details for troubleshooting
+            if e.stderr:
+                for line in e.stderr.strip().split('\n'):
+                    logger.error(f"  rsync error: {line}")
+            deployment_success = False   
+                    
+        # except subprocess.CalledProcessError as e:
+        #     logger.error(f"Failed to deploy {expected_dir}: {e.stderr}")
+        #     deployment_success = False
     
     return deployment_success
 

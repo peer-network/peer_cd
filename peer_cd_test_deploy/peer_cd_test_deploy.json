@@ -1,7 +1,7 @@
 { 
     "DEPLOYMENT_MAPPINGS": {
-        "Python3_webhook": {
-            "source_dir": "Python3_webhook",
+        "Python3_webhooK": {
+            "source_dir": "Python3_webhooK",  
             "target_server": "local",
             "target_path": "~/myenv/peer_cd/Python3_webhook",
             "user": "ubuntu",
