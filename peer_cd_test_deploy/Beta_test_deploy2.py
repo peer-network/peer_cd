@@ -3,6 +3,7 @@
 """
 Post-Deployment Script for Testing and Remote Deployment
 Runs unit tests (Python, PHP, Bash) and syncs specific directories to remote servers
+And a push test here
 """
 
 import os
