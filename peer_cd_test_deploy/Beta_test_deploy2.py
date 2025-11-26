@@ -111,7 +111,7 @@ def log_deployment_info():
 ## 
 def run_tests():
     """Run unit tests for Python, PHP, and Bash"""
-    logger.info("Starting unit tests...")
+    logger.info("*** Starting unit tests... ***")
     
     test_results = {}
     overall_success = True
@@ -188,9 +188,13 @@ def run_tests():
 
 def deploy_directory_locally(mapping_config, mapping_name):
     """Deploy a specific directory locally using rsync"""
+
+
     source_path = os.path.join(DEPLOY_DIR, mapping_config['source_dir'])
     target_path = mapping_config['target_path']
     
+    logger.info(f"*** Starting Local Deploymet... {source_path} -> {target_path} ***")
+
     # Expand tilde in target path
     if target_path.startswith('~/'):
         target_path = os.path.expanduser(target_path)
@@ -248,6 +252,9 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     server_user = mapping_config['user']
     exclude_dir = mapping_config['excludes']
     
+    logger.info(f"*** Starting Deploymet... {source_path} -> {target_path} ***")
+
+
     logger.info(f"Deploying {mapping_name} to {server_ip}: {source_path} -> {target_path}")
     
     # Check if source directory exists
