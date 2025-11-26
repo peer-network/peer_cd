@@ -3,7 +3,7 @@
         "Python3_webhooK": {
             "source_dir": "Python3_webhooK",  
             "target_server": "local",
-            "target_path": "~/myenv/peer_cd/Python3_webhook",
+            "target_path": "~/myenv/peer_cd/Python3_webhooK",
             "user": "ubuntu",
             "ip": null,  
             "_note": "** For local deployment **",
