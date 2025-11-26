@@ -277,7 +277,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     # CHANGE: Build rsync command cleanly with optional detailed logging
     rsync_cmd = [
         'rsync',
-        '-avzR',  # a=archive, v=verbose, z=compress, R=relative (preserves subdirs)
+        '-avz',  # a=archive, v=verbose, z=compress, R=relative (preserves subdirs)
         '--delete',
         '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no'
     ]
