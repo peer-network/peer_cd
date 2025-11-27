@@ -198,7 +198,7 @@ def deploy_directory_locally(mapping_config, mapping_name):
     rsync_cmd = [
         'rsync',
         '-avR',  # a=archive, v=verbose, R=relative (preserves subdirs like cron/)
-        '--delete'
+        #'--delete'
     ]
     
     # CHANGE: Add detailed logging flags if enabled
@@ -278,7 +278,7 @@ def deploy_directory_remotely(mapping_config, mapping_name):
     rsync_cmd = [
         'rsync',
         '-avz',  # a=archive, v=verbose, z=compress, R=relative (preserves subdirs)
-        '--delete',
+        #'--delete',
         '-e', f'ssh -i {SSH_KEY_PATH} -o StrictHostKeyChecking=no'
     ]
     
