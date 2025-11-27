@@ -13,7 +13,7 @@
         "peer_cd_test_deploy": {
             "source_dir": "peer_cd_test_deploy",
             "target_server": "local",
-            "target_path": "/opt/application/peer_cd_test_deploy",
+            "target_path": "~/myenv/peer_cd_test_deploy",
             "user": "ubuntu",
             "ip": null,
             "_note": "** For local deployment **",
@@ -23,7 +23,7 @@
         "monitoring-stack": {
             "source_dir": "monitoring-stack",
             "target_server": "monitor",
-            "target_path": "/home/ubuntu/peer_cd/monitoring-stack",
+            "target_path": "~/myenv/peer_cd/monitoring-stack",
             "user": "ubuntu",
             "ip": "172.16.0.20",
             "_note": "For Test Monitor",
