@@ -1,5 +1,9 @@
 name: Security Scan
 
+permissions:
+  contents: write
+  pull-requests: write
+  
 on:
   pull_request:
     branches:
@@ -11,6 +15,54 @@ on:
       - main
 
 jobs:
+  auto_label:
+    name: Auto Label PR
+    if: github.event_name == 'pull_request'
+    uses: peer-network/.github/.github/workflows/auto-label.yml@main
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    with:
+      mode: soft
+      label_config: |
+        {
+          ".github/workflows/.*": "ci",
+          ".githooks/.*": "ci",
+
+          ".security/.*": "security",
+
+          "README.*": "documentation",
+          "LICENSE": "documentation",
+
+          "mintbot/.*": "mintbot",
+          "mintbot/scripts/.*": "mintbot",
+          "mintbot/secrets/.*": "secrets",
+          "mintbot/.*\\.schema$": "config",
+
+          "monitoring-stack/.*": "monitoring",
+          "monitoring-stack/scripts/.*": "monitoring",
+          "monitoring-stack/postman_collection/.*": "monitoring",
+
+          "php-webhook/.*": "webhook",
+          "php-webhook/cron/.*": "cron",
+
+          "Python3_webhooK/.*": "webhook",
+          "peer_cd_test_deploy/.*": "testing",
+
+          "update-database.sh": "database",
+          "restart-php.sh": "ops",
+          "deploy-backend.sh": "deployment",
+
+          ".*\\.sh$": "scripts",
+          ".*\\.py$": "scripts",
+          ".*\\.php$": "scripts",
+
+          "payload.json": "config",
+          ".*\\.json$": "config",
+
+          ".env.schema": "config",
+          ".*\\.schema$": "config"
+        }
+
   gitleaks:
     name: Run Gitleaks Scan
     uses: peer-network/peer_global_security/.github/workflows/gitleaks.yml@main
