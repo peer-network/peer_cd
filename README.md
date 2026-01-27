@@ -77,6 +77,16 @@ Log files are created under /var/log/mintlog/mint_<timestamp>/ and rotated autom
 
 The Mintbot (mint.sh) runs daily Berlin Germany time  via cron (10:00 AM) and automatically sends Telegram.
 
+### Redis Worker Monitoring
+
+The Redis monitoring script runs with cron and posts Telegram alerts using the same env keys as the monitoring stack (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`).
+
+Example cron entry (every 5 minutes):
+
+```
+*/5 * * * * /home/ubuntu/monitoring-stack/scripts/redis_monitor.sh >> /var/log/redis_monitor/cron.log 2>&1
+```
+
 ## Format of Peer CD
 
 As of 04.08.2025
